@@ -1,0 +1,10 @@
+{
+  "author": "John A. De Goes",
+  "name": "precog-js-client",
+  "version": "0.1.0",
+  "description": "",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib": "~0.6.1"
+  }
+}
