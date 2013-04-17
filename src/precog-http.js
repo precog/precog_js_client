@@ -12,7 +12,7 @@ var PrecogHttp = {
   ajax: function(options) {
     _defopts(options);
 
-    window.console && 
+    if(window.console)
       window.console.info('HTTP ' + method + ' ' + path + ': headers(' + JSON.stringify(headers) + '), content('+ JSON.stringify(content) + ')');
 
     var request = (function() {
@@ -22,13 +22,12 @@ var PrecogHttp = {
 
     request.open(method, path);
 
-    request.upload && (
+    if(request.upload)
       request.upload.onprogress = function(e) {
         if (e.lengthComputable) {
           progress({ loaded : e.loaded, total : e.total });
         }
       };
-    );
 
     request.onreadystatechange = function() {
       var headers = request.getAllResponseHeaders && 
@@ -81,7 +80,7 @@ var PrecogHttp = {
   jsonp: function(options) {
     _defopts(options);
 
-    window.console && 
+    if(window.console)
       window.console.info('HTTP ' + method + ' ' + path + ': headers(' + JSON.stringify(headers) + '), content('+ JSON.stringify(content) + ')');
 
     var random   = Math.floor(Math.random() * 214748363);
