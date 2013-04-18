@@ -45,8 +45,7 @@ var PrecogHttp = function(options) {
       var o = {};
 
       o.method   = options.method || 'GET';
-      o.query    = options.query || {};
-      o.url      = addQuery(options.url, query);
+      o.url      = addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
       o.success  = options.success;
@@ -55,6 +54,27 @@ var PrecogHttp = function(options) {
 
       return f(o);
     };
+  };
+
+  var responseCallback = function(response, success, failure) {
+    if (request.status >= 200 && request.status < 300) {
+      success(response);
+    }
+    else {
+      failure(response);
+    }
+  };
+
+  var strtrim = function(string) {
+    return string.replace(/^\s+|\s+$/g, '');
+  };
+
+  var objsize = function(obj) {
+    var size = 0;
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
   };
 
   PrecogHttp.createAjax = function() {
@@ -76,17 +96,6 @@ var PrecogHttp = function(options) {
    */
   PrecogHttp.ajax = defopts(function(options) {
     var parseResponseHeaders = function(xhr) {
-      var trim = function(string) {
-        return string.replace(/^\s+|\s+$/g, '');
-      };
-      var size = function(obj) {
-        var size = 0;
-        for (var key in obj) {
-          if (obj.hasOwnProperty(key)) size++;
-        }
-        return size;
-      };
-
       var headers = {};
 
       if (xhr.getAllResponseHeaders) {
@@ -98,15 +107,15 @@ var PrecogHttp = function(options) {
 
             var colonIdx = line.indexOf(':');
 
-            var name  = trim(line.substr(0, colonIdx));
-            var value = trim(line.substr(colonIdx + 1));
+            var name  = strtrim(line.substr(0, colonIdx));
+            var value = strtrim(line.substr(colonIdx + 1));
 
             headers[name] = value;
           }
         }
       }
 
-      if (size(headers) === 0 && xhr.getResponseHeader) {
+      if (objsize(headers) === 0 && xhr.getResponseHeader) {
         var contentType = xhr.getResponseHeader('Content-Type');
 
         if (contentType) {
@@ -131,22 +140,22 @@ var PrecogHttp = function(options) {
       var headers = parseResponseHeaders(request);
 
       if (request.readyState === 4) {
-        var response = this.responseText;
+        var content = this.responseText;
 
-        if (response != null) {
+        if (content != null) {
           try {
             var ctype = headers['Content-Type'];
             if (ctype == 'application/json' || ctype == 'text/json')
-              response = JSON.parse(this.responseText);
+              content = JSON.parse(this.responseText);
           } catch (e) {}
         }
 
-        if (request.status >= 200 && request.status < 300) {
-          success({headers: headers, content: response, status: request.status});
-        }
-        else {
-          failure({headers: headers, content: response, status: request.status});
-        }
+        responseCallback({
+          headers:    headers, 
+          content:    content, 
+          status:     request.status,
+          statusText: request.statusText
+        }, success, failure);
       }
     };
 
@@ -182,35 +191,35 @@ var PrecogHttp = function(options) {
    * })
    */
   Precog.jsonp = defopts(function(options) {
-    var random   = Math.floor(Math.random() * 214748363);
-    var funcName = 'PrecogJsonpCallback' + random.toString();
+    var random = Math.floor(Math.random() * 214748363);
+    var fname  = 'PrecogJsonpCallback' + random.toString();
 
-    window[funcName] = function(content, meta) {
-      if (meta.status.code === 200 || meta.status.code === "OK" || meta.status.code === "NoContent" || meta.status.code === "Created") {
-        options.success(content, meta.headers);
-      }
-      else {
-        failure(meta.status.code, content ? content : meta.status.reason, meta.headers);
-      }
+    window[fname] = function(content, meta) {
+      responseCallback({
+        headers:    meta.headers, 
+        content:    content, 
+        status:     meta.status.code, 
+        statusText: meta.status.reason
+      }, success, failure);
 
-      document.head.removeChild(document.getElementById(funcName));
+      document.head.removeChild(document.getElementById(fname));
 
       try{
-        delete window[funcName];
-      } catch(e){
-        window[funcName] = undefined;
+        delete window[fname];
+      } catch(e) {
+        window[fname] = undefined;
       }
     };
 
-    var extraQuery = options.query;
+    var extraQuery = {};
 
     extraQuery.method = options.method;
 
-    if (options.headers) {
+    if (options.headers && objsize(options.headers) > 0) {
       extraQuery.headers = JSON.stringify(options.headers);
     }
 
-    extraQuery.callback = funcName;
+    extraQuery.callback = fname;
 
     if (options.content !== undefined) {
       extraQuery.content = JSON.stringify(options.content);
@@ -222,7 +231,7 @@ var PrecogHttp = function(options) {
 
     script.setAttribute('type', 'text/javascript');
     script.setAttribute('src',  fullUrl);
-    script.setAttribute('id',   funcName);
+    script.setAttribute('id',   fname);
 
     // Workaround for document.head being undefined.
     if (!document.head) document.head = document.getElementsByTagName('head')[0];
