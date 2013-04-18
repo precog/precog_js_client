@@ -292,7 +292,41 @@ var PrecogHttp = function(options) {
    * })
    */
   PrecogHttp.prototype.nodejs = Util.defopts(function(options) {
-    
+    var reqOptions = require('url').parse(options.path);
+    var http = require(reqOptions.protocol == 'https://' ? 'https' : 'http');
+
+    reqOptions.method = options.method;
+    reqOptions.headers = options.headers;
+
+    if (options.content && !options.headers['Content-Type'])
+      reqOptions.headers['Content-Type'] = 'application/json';
+
+    var request = http.request(reqOptions, function(response) {
+      var data = '';
+      response.setEncoding('utf8');
+      response.on('data', function (chunk) {
+        data += chunk;
+
+        if (response.headers['Content-Length'])
+          options.progress({loaded : data.length, total : response.headers['Content-Length'] });
+      });
+      response.on('close', function() {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          success({headers: response.headers, content: data, status: response.statusCode});
+        }
+        else {
+          failure({headers: response.headers, content: data, status: response.statusCode});
+        }
+      });
+    });
+
+    if (options.content) {
+      request.write((options.headers['Content-Type'] ? options.content : JSON.stringify(options.content)) + '\n');
+    }
+
+    request.end();
+
+    return request;
   });
 
   PrecogHttp.prototype.get = function(options) {
