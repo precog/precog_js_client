@@ -19,7 +19,9 @@ var PrecogHttp = function(options) {
 };
 
 (function(PrecogHttp) {
-  var defopts = function(f) {
+  var Util = {};
+
+  Util.defopts = function(f) {
     var addQuery = function(url, query) {
       var hashtagpos = url.lastIndexOf('#'), hash = '';
       if (hashtagpos >= 0) {
@@ -56,20 +58,19 @@ var PrecogHttp = function(options) {
     };
   };
 
-  var responseCallback = function(response, success, failure) {
+  Util.responseCallback = function(response, success, failure) {
     if (request.status >= 200 && request.status < 300) {
       success(response);
-    }
-    else {
+    } else {
       failure(response);
     }
   };
 
-  var strtrim = function(string) {
+  Util.strtrim = function(string) {
     return string.replace(/^\s+|\s+$/g, '');
   };
 
-  var objsize = function(obj) {
+  Util.objsize = function(obj) {
     var size = 0;
     for (var key in obj) {
       if (obj.hasOwnProperty(key)) size++;
@@ -94,7 +95,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.ajax = defopts(function(options) {
+  PrecogHttp.ajax = Util.defopts(function(options) {
     var parseResponseHeaders = function(xhr) {
       var headers = {};
 
@@ -107,15 +108,15 @@ var PrecogHttp = function(options) {
 
             var colonIdx = line.indexOf(':');
 
-            var name  = strtrim(line.substr(0, colonIdx));
-            var value = strtrim(line.substr(colonIdx + 1));
+            var name  = Util.strtrim(line.substr(0, colonIdx));
+            var value = Util.strtrim(line.substr(colonIdx + 1));
 
             headers[name] = value;
           }
         }
       }
 
-      if (objsize(headers) === 0 && xhr.getResponseHeader) {
+      if (Util.objsize(headers) === 0 && xhr.getResponseHeader) {
         var contentType = xhr.getResponseHeader('Content-Type');
 
         if (contentType) {
@@ -150,7 +151,7 @@ var PrecogHttp = function(options) {
           } catch (e) {}
         }
 
-        responseCallback({
+        Util.responseCallback({
           headers:    headers, 
           content:    content, 
           status:     request.status,
@@ -190,12 +191,12 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  Precog.jsonp = defopts(function(options) {
+  Precog.jsonp = Util.defopts(function(options) {
     var random = Math.floor(Math.random() * 214748363);
     var fname  = 'PrecogJsonpCallback' + random.toString();
 
     window[fname] = function(content, meta) {
-      responseCallback({
+      Util.responseCallback({
         headers:    meta.headers, 
         content:    content, 
         status:     meta.status.code, 
@@ -215,7 +216,7 @@ var PrecogHttp = function(options) {
 
     extraQuery.method = options.method;
 
-    if (options.headers && objsize(options.headers) > 0) {
+    if (options.headers && Util.objsize(options.headers) > 0) {
       extraQuery.headers = JSON.stringify(options.headers);
     }
 
@@ -251,7 +252,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  Precog.nodejs = defopts(function(options) {
+  Precog.nodejs = Util.defopts(function(options) {
     
   });
 })(PrecogHttp);
