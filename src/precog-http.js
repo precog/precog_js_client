@@ -14,9 +14,7 @@
  * })
  */
 var PrecogHttp = function(options) {
-  if (typeof window === 'undefined') return this.nodejs(options);
-  else if ('withCredentials' in this.createAjax()) return this.ajax(options);
-  else return this.jsonp(options);
+  return this.http(options);
 };
 
 (function(PrecogHttp) {
@@ -105,6 +103,12 @@ var PrecogHttp = function(options) {
   PrecogHttp.prototype.createAjax = function() {
     if (window.XMLHttpRequest) return new XMLHttpRequest();
     else return new ActiveXObject("Microsoft.XMLHTTP");
+  };
+
+  PrecogHttp.prototype.http = function(options) {
+    if (typeof window === 'undefined') return this.nodejs(options);
+    else if ('withCredentials' in this.createAjax()) return this.ajax(options);
+    else return this.jsonp(options);
   };
 
   /**
@@ -328,22 +332,22 @@ var PrecogHttp = function(options) {
   });
 
   PrecogHttp.prototype.get = function(options) {
-    PrecogHttp(Util.merge(options, {method: "GET"}));
+    this.http(Util.merge(options, {method: "GET"}));
   };
 
   PrecogHttp.prototype.put = function(options) {
-    PrecogHttp(Util.merge(options, {method: "PUT"}));
+    this.http(Util.merge(options, {method: "PUT"}));
   };
 
   PrecogHttp.prototype.post = function(options) {
-    PrecogHttp(Util.merge(options, {method: "POST"}));
+    this.http(Util.merge(options, {method: "POST"}));
   };
 
   PrecogHttp.prototype.delete0 = function(options) {
-    PrecogHttp(Util.merge(options, {method: "DELETE"}));
+    this.http(Util.merge(options, {method: "DELETE"}));
   };
 
   PrecogHttp.prototype.patch = function(options) {
-    PrecogHttp(Util.merge(options, {method: "PATCH"}));
+    this.http(Util.merge(options, {method: "PATCH"}));
   };
 })(PrecogHttp);
