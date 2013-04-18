@@ -38,7 +38,8 @@ var Precog = function(config) {
       return f(f0(v));
     };
   };
-  Util.extractContent = function(v) { return v.content; };
+  Util.extractField = function(field) { return function(v) { return v[field]; }; };
+  Util.extractContent = Util.extractField('content');
   Util.unwrapSingleton = function(v) { return v instanceof Array ? v[0] : v; };
   Util.defSuccess = function(success) {
     return Util.composef(success, Util.extractContent);
@@ -163,12 +164,54 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describePlan = function(account, success, failure) {
+  Precog.prototype.currentPlan = function(account, success, failure) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
+    var self = this;
+
     self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.get({
+        basicAuth: {
+          username: account.email,
+          password: account.password
+        },
+        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        success:  Util.composef(Util.extractField('type'), Util.defSuccess(success)),
+        failure:  Util.defFailure(failure)
+      });
+    }, Util.defFailure(failure));
+  };
+
+  Precog.prototype.changePlan = function(account, success, failure) {
+    Util.requireField(account, 'email');
+    Util.requireField(account, 'password');
+    Util.requireField(account, 'plan');
+
+    var self = this;
+
+    self.lookupAccountId(account.email, function(accountId) {
+      PrecogHttp.put({
+        basicAuth: {
+          username: account.email,
+          password: account.password
+        },
+        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        content:  {type: account.plan},
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
+      });
+    }, Util.defFailure(failure));
+  };
+
+  Precog.prototype.deletePlan = function(email, password, accountId, success, failure, options) {
+    Util.requireField(account, 'email');
+    Util.requireField(account, 'password');
+
+    var self = this;
+
+    self.lookupAccountId(account.email, function(accountId) {
+      PrecogHttp.delete0({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -178,27 +221,6 @@ var Precog = function(config) {
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
-  };
-
-  Precog.prototype.changePlan = function(email, password, accountId, type, success, failure, options) {
-    var description = 'Change plan to '+type+' for account ' + accountId;
-    http.put(
-      Util.actionUrl("accounts", "accounts", options) + accountId + "/plan",
-      { "type" : type },
-      Util.createCallbacks(success, failure, description),
-      null,
-      { "Authorization" : Util.makeBaseAuth(email, password) }
-    );
-  };
-
-  Precog.prototype.deletePlan = function(email, password, accountId, success, failure, options) {
-    var description = 'Delete account ' + accountId;
-    http.remove(
-      Util.actionUrl("accounts", "accounts", options) +accountId + "/plan",
-      Util.createCallbacks(success, failure, description),
-      null,
-      { "Authorization" : Util.makeBaseAuth(email, password) }
-    );
   };
 
 })(Precog);
