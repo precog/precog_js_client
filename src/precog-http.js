@@ -238,16 +238,14 @@ var PrecogHttp = function(options) {
       }
     };
 
-    var query = {};
-
-    query.method = options.method;
+    var query = {
+      method:   options.method,
+      callback: fname
+    };
 
     if (options.headers && Util.objsize(options.headers) > 0) {
       query.headers = JSON.stringify(options.headers);
     }
-
-    query.callback = fname;
-
     if (options.content !== undefined) {
       query.content = JSON.stringify(options.content);
     }
@@ -311,17 +309,17 @@ var PrecogHttp = function(options) {
           options.progress({loaded : data.length, total : response.headers['Content-Length'] });
       });
       response.on('close', function() {
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          success({headers: response.headers, content: data, status: response.statusCode});
-        }
-        else {
-          failure({headers: response.headers, content: data, status: response.statusCode});
-        }
+        Util.responseCallback({
+          headers:    response.headers, 
+          content:    data, 
+          status:     response.statusCode,
+          statusText: 'statusText not available from nodejs http module'
+        }, success, failure);
       });
     });
 
     if (options.content) {
-      request.write((options.headers['Content-Type'] ? options.content : JSON.stringify(options.content)) + '\n');
+      request.write(options.headers['Content-Type'] ? options.content : JSON.stringify(options.content));
     }
 
     request.end();
