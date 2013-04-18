@@ -19,6 +19,9 @@ module.exports = function(grunt) {
       files: ['gruntfile.js', 'src/*.js', 'test/**/*.js'],
       options: {
         // options here to override JSHint defaults
+        eqnull: true,
+        expr: true,
+
         globals: {
           console: true,
           module: true,
