@@ -33,6 +33,13 @@ var Precog = function(config) {
   Util.sanitizePath = function(path) {
     return (path + "/").replace(/[\/]+/g, "/");
   };
+  Util.composef = function(f, f0) {
+    return function(v) {
+      return f(f0(v));
+    };
+  };
+  Util.extractContent = function(v) { return v.content; };
+  Util.singletonArray = function(v) { return v instanceof Array ? v[0] : v; };
 
   Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
     Util.requireField(this.config, "analyticsService");
@@ -80,7 +87,7 @@ var Precog = function(config) {
     PrecogHttp.post({
       url:      self.accountsUrl("accounts"),
       content:  account,
-      success:  success,
+      success:  Util.composef(success, Util.extractContent),
       failure:  failure
     });
   };
@@ -92,7 +99,8 @@ var Precog = function(config) {
       PrecogHttp.post({
         url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
         content:  {email: email},
-        success:  success
+        success:  Util.composef(success, Util.extractContent),
+        failure:  failure
       });
     }, failure);
   };
@@ -103,11 +111,7 @@ var Precog = function(config) {
     PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
       content:  {email: email},
-      success:  function(result) {
-        var accountId = (result.content instanceof Array) ? result.content[0] : result.content;
-
-        success(accountId);
-      },
+      success:  Util.composef(success, Util.composef(Util.singletonArray, Util.extractContent)),
       failure:  failure
     });
   };
