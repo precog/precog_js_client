@@ -160,14 +160,15 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
-  Precog.prototype.addGrantToAccount = function(grantInfo, success, failure) {
+  Precog.prototype.addGrantToAccount = function(info, success, failure) {
     var self = this;
 
-    Util.requireField(grantInfo, 'accountId');
-    Util.requireField(grantInfo, 'grantId');
+    Util.requireField(info, 'accountId');
+    Util.requireField(info, 'grantId');
 
-    PrecogHttp.get({
-      url:      self.accountsUrl("accounts/" + accountId + "/grants/"),
+    PrecogHttp.post({
+      url:      self.accountsUrl("accounts/" + info.accountId + "/grants/"),
+      content:  {grantId: info.grant},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
@@ -213,7 +214,7 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
-  Precog.prototype.deletePlan = function(email, password, accountId, success, failure, options) {
+  Precog.prototype.deletePlan = function(account, success, failure) {
     var self = this;
 
     Util.requireField(account, 'email');
@@ -251,6 +252,7 @@ var Precog = function(config) {
   Precog.prototype.createKey = function(grants, success, failure, options) {
     var self = this;
 
+    Util.requireParam(grants, 'grants');
     self.requireConfig('apiKey');
 
     PrecogHttp.post({
@@ -278,6 +280,7 @@ var Precog = function(config) {
   Precog.prototype.deleteKey = function(apiKey, success, failure, options) {
     var self = this;
 
+    Util.requireParam(apiKey, 'apiKey');
     self.requireConfig('apiKey');
 
     PrecogHttp.delete0({
@@ -291,6 +294,7 @@ var Precog = function(config) {
   Precog.prototype.retrieveGrants = function(apiKey, success, failure, options) {
     var self = this;
 
+    Util.requireParam(apiKey, 'apiKey');
     self.requireConfig('apiKey');
 
     PrecogHttp.get({
@@ -301,17 +305,21 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.addGrantToKey = function(apiKey, grant, success, failure, options) {
-    var description = 'Add grant '+JSON.stringify(grant)+' to '+apiKey,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.addGrantToKey = function(info, success, failure, options) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.post(
-      Util.actionUrl("security", "apikeys", options) +apiKey+ "/grants/",
-      grant,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireField(info, 'grant');
+    Util.requireField(info, 'apiKey');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.post({
+      url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/",
+      content:  info.grant,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.removeGrant = function(apiKey, grantId, success, failure, options) {
