@@ -93,8 +93,8 @@ var Precog = function(config) {
 
   /**
    * Creates a new account with the specified email and password. In order for 
-   * this function to succeed, there must exist no account with the specified
-   * email.
+   * this function to succeed, the specified email cannot already be associated
+   * with an account.
    *
    * @example
    * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
@@ -113,7 +113,14 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.requestResetPassword = function(email, success, failure) {
+  /**
+   * Requests a password reset for the specified email. This may or may not have
+   * any effect depending on security settings.
+   *
+   * @example
+   * Precog.requestPasswordReset('jdoe@foo.com');
+   */
+  Precog.prototype.requestPasswordReset = function(email, success, failure) {
     var self = this;
 
     Util.requireParam(email, 'email');
@@ -128,6 +135,12 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
+  /**
+   * Looks up the account associated with the specified email address.
+   *
+   * @example
+   * Precog.lookupAccountId('jdoe@foo.com');
+   */
   Precog.prototype.lookupAccountId = function(email, success, failure) {
     var self = this;
 
@@ -141,6 +154,12 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Describes the specified account, identified by email and password.
+   *
+   * @example
+   * Precog.describeAccount({email: 'jdoe@foo.com', password: 'abc123'});
+   */
   Precog.prototype.describeAccount = function(account, success, failure) {
     var self = this;
 
@@ -160,6 +179,14 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
+  /**
+   * Adds a grant to the specified account.
+   *
+   * @example
+   * Precog.describeAccount(
+   *   {accountId: '23987123', grantId: '0d43eece-7abb-43bd-8385-e33bac78e145'}
+   * );
+   */
   Precog.prototype.addGrantToAccount = function(info, success, failure) {
     var self = this;
 
@@ -174,6 +201,13 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Retrieves the plan that the specified account is on. The account is 
+   * identified by email and password.
+   *
+   * @example
+   * Precog.currentPlan({email: 'jdoe@foo.com', password: 'abc123'});
+   */
   Precog.prototype.currentPlan = function(account, success, failure) {
     var self = this;
 
@@ -193,6 +227,12 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
+  /**
+   * Changes the account's plan.
+   *
+   * @example
+   * Precog.changePlan({email: 'jdoe@foo.com', password: 'abc123', plan: 'BRONZE'});
+   */
   Precog.prototype.changePlan = function(account, success, failure) {
     var self = this;
 
@@ -214,6 +254,12 @@ var Precog = function(config) {
     }, Util.defFailure(failure));
   };
 
+  /**
+   * Delete's the account's plan, resetting it to the default plan on the system.
+   *
+   * @example
+   * Precog.deletePlan({email: 'jdoe@foo.com', password: 'abc123'});
+   */
   Precog.prototype.deletePlan = function(account, success, failure) {
     var self = this;
 

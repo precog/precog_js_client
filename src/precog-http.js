@@ -54,9 +54,9 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success;
-      o.failure  = options.failure || function() {};
-      o.progress = options.progress || function() {};
+      o.success  = options.success || (typeof console !== 'undefined' && console.info) || function() {};
+      o.failure  = options.failure || (typeof console !== 'undefined' && console.error) || function() {};
+      o.progress = options.progress || (typeof console !== 'undefined' && console.debug) || function() {};
       o.sync     = options.sync || false;
 
       if (options.basicAuth) {
