@@ -58,6 +58,7 @@ var PrecogHttp = function(options) {
       o.success  = options.success;
       o.failure  = options.failure || function() {};
       o.progress = options.progress || function() {};
+      o.sync     = options.sync || false;
 
       if (options.basicAuth) {
         o.headers.Authorization = 
@@ -153,7 +154,7 @@ var PrecogHttp = function(options) {
 
     var request = PrecogHttp.createAjax();
 
-    request.open(options.method, options.url);
+    request.open(options.method, options.url, options.sync);
 
     request.upload && (request.upload.onprogress = function(e) {
       if (e.lengthComputable) {
