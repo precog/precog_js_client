@@ -157,10 +157,6 @@ var Precog = function(config) {
     var self = this;
 
     PrecogHttp.get({
-      basicAuth: {
-        username: grantInfo.email,
-        password: grantInfo.password
-      },
       url:      self.accountsUrl("accounts/" + accountId + "/grants/"),
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
