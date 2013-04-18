@@ -399,17 +399,21 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.createGrantChild = function(grantId, child, success, failure, options) {
-    var description = 'Create child grant '+JSON.stringify(child)+" for "+grantId,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.createGrantChild = function(info, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.post(
-      Util.actionUrl("security", "grants", options)+grantId+"/children/",
-      child,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireField(info, 'parentGrantId');
+    Util.requireField(info, 'childGrant');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.post({
+      url:      self.securityUrl("grants") + "/" + info.parentGrantId + "/children/",
+      content:  info.childGrant,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
 })(Precog);
