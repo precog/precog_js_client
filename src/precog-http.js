@@ -60,7 +60,7 @@ var PrecogHttp = function(options) {
       o.progress = options.progress || function() {};
 
       if (options.basicAuth) {
-        o.headers['Authorization'] = 
+        o.headers.Authorization = 
           Util.makeBaseAuth(options.basicAuth.username, options.basicAuth.password);
       }
 
