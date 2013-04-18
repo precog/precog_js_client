@@ -71,46 +71,45 @@ var Precog = function(config) {
    * @example
    * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
    */
-  Precog.prototype.createAccount = function(account, success, failure, options) {
+  Precog.prototype.createAccount = function(account, success, failure) {
+    var self = this;
+
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
     PrecogHttp.post({
-      url:      this.serviceUrl("accounts", 1, "accounts"),
+      url:      self.accountsUrl("accounts"),
       content:  account,
       success:  success,
       failure:  failure
     });
   };
 
-  Precog.prototype.requestResetPassword = function(email, success, failure, options) {
+  Precog.prototype.requestResetPassword = function(email, success, failure) {
     var self = this;
 
     self.lookupAccountId(email, function(accountId) {
       PrecogHttp.post({
-        url:      self.serviceUrl("accounts", 1, accounts + "/" + accountId + "/password/reset"),
+        url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
         content:  {email: email},
         success:  success
       });
     }, failure);
   };
 
-  Precog.prototype.lookupAccountId = function(email, success, failure, options) {
-    http.get(
-      Util.actionUrl("accounts","accounts", options) + "search",
-      Util.createCallbacks(
-        function(data) {
-          try {
-            success(data instanceof Array ? data[0].accountId : data.accountId);
-          } catch(e) {
-            failure(e);
-          }
-        },
-        failure,
-        description
-      ),
-      { "email" : email }
-    );
+  Precog.prototype.lookupAccountId = function(email, success, failure) {
+    var self = this;
+
+    PrecogHttp.get({
+      url:      self.accountsUrl("accounts/search"),
+      content:  {email: email},
+      success:  function(result) {
+        var accountId = (result.content instanceof Array) ? result.content[0] : result.content;
+
+        success(accountId);
+      },
+      failure:  failure
+    });
   };
 
   Precog.prototype.describeAccount = function(email, password, accountId, success, failure, options) {
