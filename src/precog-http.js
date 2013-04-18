@@ -1,4 +1,22 @@
-var PrecogHttp = {};
+/**
+ * An HTTP implementation that detects which implementation to use.
+ *
+ * @example
+ * PrecogHttp({
+ *   method: "GET",
+ *   url: "http://api.precog.com",
+ *   query: { apiKey: "12321323" },
+ *   content: {"foo": "bar"},
+ *   success: function(result) { },
+ *   failure: function(result) { },
+ *   progress: function(status) { }
+ * })
+ */
+var PrecogHttp = function(options) {
+  if (typeof window === 'undefined') return this.nodejs(options);
+  else if ('withCredentials' in this.createAjax()) return this.ajax(options);
+  else return this.jsonp(options);
+};
 
 (function(PrecogHttp) {
   var defopts = function(f) {
@@ -28,7 +46,7 @@ var PrecogHttp = {};
 
       o.method   = options.method || 'GET';
       o.query    = options.query || {};
-      o.path     = addQuery(options.path, query);
+      o.url      = addQuery(options.url, query);
       o.content  = options.content;
       o.headers  = options.headers || {};
       o.success  = options.success;
@@ -39,6 +57,23 @@ var PrecogHttp = {};
     };
   };
 
+  PrecogHttp.createAjax = function() {
+    if (window.XMLHttpRequest) return new XMLHttpRequest();
+    else return new ActiveXObject("Microsoft.XMLHTTP");
+  };
+
+  /**
+   * @example
+   * PrecogHttp.ajax({
+   *   method: "GET",
+   *   url: "http://api.precog.com",
+   *   query: { apiKey: "12321323" },
+   *   content: {"foo": "bar"},
+   *   success: function(result) { },
+   *   failure: function(result) { },
+   *   progress: function(status) { }
+   * })
+   */
   PrecogHttp.ajax = defopts(function(options) {
     var parseResponseHeaders = function(xhr) {
       var trim = function(string) {
@@ -82,12 +117,9 @@ var PrecogHttp = {};
       return headers;
     };
 
-    var request = (function() {
-      if (window.XMLHttpRequest) return new XMLHttpRequest();
-      else return new ActiveXObject("Microsoft.XMLHTTP");
-    })();
+    var request = PrecogHttp.createAjax();
 
-    request.open(options.method, options.path);
+    request.open(options.method, options.url);
 
     request.upload && (request.upload.onprogress = function(e) {
       if (e.lengthComputable) {
@@ -137,6 +169,18 @@ var PrecogHttp = {};
     return request;
   });
 
+  /**
+   * @example
+   * PrecogHttp.jsonp({
+   *   method: "GET",
+   *   url: "http://api.precog.com",
+   *   query: { apiKey: "12321323" },
+   *   content: {"foo": "bar"},
+   *   success: function(result) { },
+   *   failure: function(result) { },
+   *   progress: function(status) { }
+   * })
+   */
   Precog.jsonp = defopts(function(options) {
     var random   = Math.floor(Math.random() * 214748363);
     var funcName = 'PrecogJsonpCallback' + random.toString();
@@ -172,7 +216,7 @@ var PrecogHttp = {};
       extraQuery.content = JSON.stringify(options.content);
     }
 
-    var fullUrl = addQuery(options.path, extraQuery);
+    var fullUrl = addQuery(options.url, extraQuery);
 
     var script = document.createElement('SCRIPT');
 
@@ -186,6 +230,18 @@ var PrecogHttp = {};
     document.head.appendChild(script);
   });
 
+  /**
+   * @example
+   * PrecogHttp.nodejs({
+   *   method: "GET",
+   *   url: "http://api.precog.com",
+   *   query: { apiKey: "12321323" },
+   *   content: {"foo": "bar"},
+   *   success: function(result) { },
+   *   failure: function(result) { },
+   *   progress: function(status) { }
+   * })
+   */
   Precog.nodejs = defopts(function(options) {
     
   });
