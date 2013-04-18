@@ -88,6 +88,19 @@ var PrecogHttp = function(options) {
     return size;
   };
 
+  Util.merge = function(o1, o2) {
+    var r = {}, key;
+    // Copy:
+    for (key in o1) {
+      r[key] = o1[key];
+    }
+    // Merge:
+    for (key in o2) {
+      r[key] = o2[key];
+    }
+    return r;
+  };
+
   PrecogHttp.createAjax = function() {
     if (window.XMLHttpRequest) return new XMLHttpRequest();
     else return new ActiveXObject("Microsoft.XMLHTTP");
@@ -203,7 +216,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  Precog.jsonp = Util.defopts(function(options) {
+  PrecogHttp.jsonp = Util.defopts(function(options) {
     var random = Math.floor(Math.random() * 214748363);
     var fname  = 'PrecogJsonpCallback' + random.toString();
 
@@ -277,7 +290,27 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  Precog.nodejs = Util.defopts(function(options) {
+  PrecogHttp.nodejs = Util.defopts(function(options) {
     
   });
+
+  PrecogHttp.get = function(options) {
+    PrecogHttp(Util.merge(options, {method: "GET"}));
+  };
+
+  PrecogHttp.put = function(options) {
+    PrecogHttp(Util.merge(options, {method: "PUT"}));
+  };
+
+  PrecogHttp.post = function(options) {
+    PrecogHttp(Util.merge(options, {method: "POST"}));
+  };
+
+  PrecogHttp.delete0 = function(options) {
+    PrecogHttp(Util.merge(options, {method: "DELETE"}));
+  };
+
+  PrecogHttp.patch = function(options) {
+    PrecogHttp(Util.merge(options, {method: "PATCH"}));
+  };
 })(PrecogHttp);
