@@ -163,16 +163,21 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describePlan = function(email, password, accountId, success, failure, options) {
-    var description = 'Describe plan ' + accountId;
-    console.log(accountId);
-    http.get(
-      Util.actionUrl("accounts", "accounts", options) +accountId + "/plan",
-      Util.createCallbacks(success, failure, description),
-      null,
-      { "Authorization" : Util.makeBaseAuth(email, password) }
-    );
-    console.log( Util.actionUrl("accounts", "accounts", accountId, options) + "plan");
+  Precog.prototype.describePlan = function(account, success, failure) {
+    Util.requireField(account, 'email');
+    Util.requireField(account, 'password');
+
+    self.lookupAccountId(account.email, function(accountId) {
+      PrecogHttp.get({
+        basicAuth: {
+          username: account.email,
+          password: account.password
+        },
+        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
+      });
+    }, Util.defFailure(failure));
   };
 
   Precog.prototype.changePlan = function(email, password, accountId, type, success, failure, options) {
