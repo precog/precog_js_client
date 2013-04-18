@@ -17,6 +17,8 @@
     window.Precog = definition();
   }
 })(function() {
+  //= ext/Base64.js
+  //= ext/json2.js
   //= precog-http.js
 
   return {
