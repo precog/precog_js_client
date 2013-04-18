@@ -589,13 +589,10 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    var query = {apiKey: self.config.apiKey};
-    if(typeof info.ownerAccountId != 'undefined') query.ownerAccountId = info.ownerAccountId;
-
     return PrecogHttp.post({
-      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs") + "/" + info.path,
+      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + info.path),
       content:  info.data,
-      query:    query,
+      query:    {apiKey: self.config.apiKey, ownerAccountId: info.ownerAccountId},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });

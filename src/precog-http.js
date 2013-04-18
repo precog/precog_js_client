@@ -34,7 +34,7 @@ function PrecogHttp(options) {
     var suffix = url.indexOf('?') == -1 ? '?' : '&';
     var queries = [];
     for (var name in query) {
-      if (query[name] !== null) {
+      if (query[name] != null) {
         var value = query[name].toString();
 
         if (value.length > 0) {
