@@ -35,8 +35,7 @@ var Precog = function(config) {
   };
   Util.composef = function(f, g) {
     if (f == null || g == null) return undefined;
-
-    return function(v) {
+    else return function(v) {
       return f(g(v));
     };
   };
@@ -304,7 +303,13 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.createKey = function(grants, success, failure) {
+  /**
+   * Creates a new API key with the specified grants.
+   *
+   * @example
+   * Precog.createApiKey(grants);
+   */
+  Precog.prototype.createApiKey = function(grants, success, failure) {
     var self = this;
 
     Util.requireParam(grants, 'grants');
@@ -319,7 +324,13 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describeKey = function(apiKey, success, failure) {
+  /**
+   * Describes an existing API key.
+   *
+   * @example
+   * Precog.describeApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
+   */
+  Precog.prototype.describeApiKey = function(apiKey, success, failure) {
     var self = this;
 
     self.requireConfig('apiKey');
@@ -332,7 +343,13 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.deleteKey = function(apiKey, success, failure) {
+  /**
+   * Deletes an existing API key.
+   *
+   * @example
+   * Precog.deleteApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
+   */
+  Precog.prototype.deleteApiKey = function(apiKey, success, failure) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -346,7 +363,13 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.retrieveGrants = function(apiKey, success, failure) {
+  /**
+   * Retrieves the grants associated with an existing API key.
+   *
+   * @example
+   * Precog.retrieveApiKeyGrants('475ae23d-f5f9-4ffc-b643-e805413d2233');
+   */
+  Precog.prototype.retrieveApiKeyGrants = function(apiKey, success, failure) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -360,7 +383,13 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.addGrantToKey = function(info, success, failure) {
+  /**
+   * Adds a grant to an existing API key.
+   *
+   * @example
+   * Precog.createApiKey({grant: grant, apiKey: apiKey});
+   */
+  Precog.prototype.addGrantToApiKey = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'grant');
@@ -377,7 +406,16 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.removeGrant = function(info, success, failure) {
+  /**
+   * Removes a grant from an existing API key.
+   *
+   * @example
+   * Precog.removeGrantFromApiKey({
+   *   apiKey: '475ae23d-f5f9-4ffc-b643-e805413d2233', 
+   *   grantId: '0b47db0d-ed14-4b56-831b-76b8bf66f976'
+   * });
+   */
+  Precog.prototype.removeGrantFromApiKey = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'grantId');
@@ -393,6 +431,22 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Creates a new grant.
+   *
+   * @example
+   * Precog.createGrant({
+   *   "name": "",
+   *   "description": "",
+   *   "parentIds": "",
+   *   "expirationDate": "",
+   *   "permissions" : [{
+   *     "accessType": "read",
+   *     "path": "/foo/",
+   *     "ownerAccountIds": "[Owner Account Id]"
+   *   }]
+   * });
+   */
   Precog.prototype.createGrant = function(grant, success, failure) {
     var self = this;
 
@@ -409,6 +463,12 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Describes an existing grant.
+   *
+   * @example
+   * Precog.describeGrant('581c36a6-0e14-487e-8622-3a38b828b931');
+   */
   Precog.prototype.describeGrant = function(grantId, success, failure) {
     var self = this;
 
@@ -424,6 +484,13 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Deletes an existing grant. In order for this operation to succeed,
+   * the grant must have been created by the authorizing API key.
+   *
+   * @example
+   * Precog.deleteGrant('581c36a6-0e14-487e-8622-3a38b828b931');
+   */
   Precog.prototype.deleteGrant = function(grantId, success, failure) {
     var self = this;
 
@@ -439,6 +506,12 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Lists the children of an existing grant.
+   *
+   * @example
+   * Precog.listGrantChildren('581c36a6-0e14-487e-8622-3a38b828b931');
+   */
   Precog.prototype.listGrantChildren = function(grantId, success, failure) {
     var self = this;
 
@@ -454,6 +527,15 @@ var Precog = function(config) {
     });
   };
 
+  /**
+   * Lists the children of an existing grant.
+   *
+   * @example
+   * Precog.createGrantChild({
+   *   parentGrantId: '581c36a6-0e14-487e-8622-3a38b828b931', 
+   *   childGrant: childGrant
+   * });
+   */
   Precog.prototype.createGrantChild = function(info, success, failure) {
     var self = this;
 
@@ -474,6 +556,13 @@ var Precog = function(config) {
   // ****************
   // *** METADATA ***
   // ****************
+
+  /**
+   * Retrieves metadata for the specified path.
+   *
+   * @example
+   * Precog.retrieveMetadata('/foo');
+   */
   Precog.prototype.retrieveMetadata = function(path, success, failure) {
     var self = this;
 
