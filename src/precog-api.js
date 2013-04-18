@@ -39,7 +39,18 @@ var Precog = function(config) {
     };
   };
   Util.extractContent = function(v) { return v.content; };
-  Util.singletonArray = function(v) { return v instanceof Array ? v[0] : v; };
+  Util.unwrapSingleton = function(v) { return v instanceof Array ? v[0] : v; };
+  Util.defSuccess = function(success) {
+    return Util.composef(success, Util.extractContent);
+  };
+
+  Util.defSuccessSingletonArray = function(success) {
+    return Util.composef(success, Util.composef(Util.unwrapSingleton, Util.extractContent));
+  };
+
+  Util.defFailure = function(failure) {
+    return Util.composef(failure, function(r) { return {message: r.statusText, code: r.statusCode};});
+  };
 
   Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
     Util.requireField(this.config, "analyticsService");
@@ -87,8 +98,8 @@ var Precog = function(config) {
     PrecogHttp.post({
       url:      self.accountsUrl("accounts"),
       content:  account,
-      success:  Util.composef(success, Util.extractContent),
-      failure:  failure
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
     });
   };
 
@@ -99,8 +110,8 @@ var Precog = function(config) {
       PrecogHttp.post({
         url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
         content:  {email: email},
-        success:  Util.composef(success, Util.extractContent),
-        failure:  failure
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
       });
     }, failure);
   };
@@ -111,8 +122,8 @@ var Precog = function(config) {
     PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
       content:  {email: email},
-      success:  Util.composef(success, Util.composef(Util.singletonArray, Util.extractContent)),
-      failure:  failure
+      success:  Util.defSuccessSingletonArray(success),
+      failure:  Util.defFailure(failure)
     });
   };
 
