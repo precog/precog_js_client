@@ -131,17 +131,17 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describeAccount = function(email, password, success, failure) {
-    Util.requireParam(email, 'email');
-    Util.requireParam(password, 'password');
+  Precog.prototype.describeAccount = function(account, success, failure) {
+    Util.requireField(account.email, 'email');
+    Util.requireField(account.password, 'password');
 
     var self = this;
 
-    self.lookupAccountId(email, function(accountId) {
+    self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.get({
         basicAuth: {
-          username: email,
-          password: password
+          username: account.email,
+          password: account.password
         },
         url:      self.accountsUrl("accounts/" + accountId),
         success:  Util.defSuccess(success),
