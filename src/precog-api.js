@@ -1,5 +1,7 @@
 
-var Precog = {};
+var Precog = function(config) {
+  this.config = config;
+}
 
 (function(Precog) {
   Precog.GrantTypes = {
@@ -26,10 +28,13 @@ var Precog = {};
    * @example
    * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
    */
-  Precog.createAccount = function(account, success, failure, options) {
+  Precog.prototype.createAccount = function(account, success, failure, options) {
     if (account.email == null) error("Email must be specified for account creation");
     if (account.password == null) error("Password must be specified for account creation");
 
+    PrecogHttp.post({
+
+    });
     http.post(
       Util.actionUrl("accounts","accounts", options),
       account,
@@ -38,7 +43,7 @@ var Precog = {};
     );
   };
 
-  Precog.requestResetPassword = function(email, success, failure, options) {
+  Precog.prototype.requestResetPassword = function(email, success, failure, options) {
     Precog.findAccount(email, function(accountId) {
       http.post(
         Util.actionUrl("accounts","accounts", options) + accountId + "/password/reset",
@@ -49,7 +54,7 @@ var Precog = {};
     }, failure);
   };
 
-  Precog.lookupAccountId = function(email, success, failure, options) {
+  Precog.prototype.lookupAccountId = function(email, success, failure, options) {
     http.get(
       Util.actionUrl("accounts","accounts", options) + "search",
       Util.createCallbacks(
@@ -67,7 +72,7 @@ var Precog = {};
     );
   };
 
-  Precog.describeAccount = function(email, password, accountId, success, failure, options) {
+  Precog.prototype.describeAccount = function(email, password, accountId, success, failure, options) {
     http.get(
       Util.actionUrl("accounts", "accounts",options) + accountId,
       Util.createCallbacks(success, failure, description),

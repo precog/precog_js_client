@@ -102,7 +102,7 @@ var PrecogHttp = function(options) {
     return r;
   };
 
-  PrecogHttp.createAjax = function() {
+  PrecogHttp.prototype.createAjax = function() {
     if (window.XMLHttpRequest) return new XMLHttpRequest();
     else return new ActiveXObject("Microsoft.XMLHTTP");
   };
@@ -120,7 +120,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.ajax = Util.defopts(function(options) {
+  PrecogHttp.prototype.ajax = Util.defopts(function(options) {
     var parseResponseHeaders = function(xhr) {
       var headers = {};
 
@@ -217,7 +217,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.jsonp = Util.defopts(function(options) {
+  PrecogHttp.prototype.jsonp = Util.defopts(function(options) {
     var random = Math.floor(Math.random() * 214748363);
     var fname  = 'PrecogJsonpCallback' + random.toString();
 
@@ -291,27 +291,27 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.nodejs = Util.defopts(function(options) {
+  PrecogHttp.prototype.nodejs = Util.defopts(function(options) {
     
   });
 
-  PrecogHttp.get = function(options) {
+  PrecogHttp.prototype.get = function(options) {
     PrecogHttp(Util.merge(options, {method: "GET"}));
   };
 
-  PrecogHttp.put = function(options) {
+  PrecogHttp.prototype.put = function(options) {
     PrecogHttp(Util.merge(options, {method: "PUT"}));
   };
 
-  PrecogHttp.post = function(options) {
+  PrecogHttp.prototype.post = function(options) {
     PrecogHttp(Util.merge(options, {method: "POST"}));
   };
 
-  PrecogHttp.delete0 = function(options) {
+  PrecogHttp.prototype.delete0 = function(options) {
     PrecogHttp(Util.merge(options, {method: "DELETE"}));
   };
 
-  PrecogHttp.patch = function(options) {
+  PrecogHttp.prototype.patch = function(options) {
     PrecogHttp(Util.merge(options, {method: "PATCH"}));
   };
 })(PrecogHttp);
