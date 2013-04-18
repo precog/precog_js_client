@@ -419,18 +419,19 @@ var Precog = function(config) {
   // ****************
   // *** METADATA ***
   // ****************
-  Precog.prototype.retrieveMetadata = function(path, success, failure, options) {
-    path = Util.trimPath(path);
-    options = options || { type : "" };
+  Precog.prototype.retrieveMetadata = function(path, success, failure) {
+    var self = this;
 
-    var description = 'Precog retrieve metadata ' + options.type,
-        parameters = { apiKey : options.apiKey || $.Config.apiKey };
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    return http.get(
-      Util.actionUrl("meta", "fs", options) + Util.actionPath(path, options) + "#" + options.type,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireParam(path, 'path');
+
+    self.requireConfig('apiKey');
+
+    return PrecogHttp.get({
+      url:      self.metadataUrl("fs") + "/" + path,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
 })(Precog);
