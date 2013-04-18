@@ -289,15 +289,16 @@ var Precog = function(config) {
   };
 
   Precog.prototype.retrieveGrants = function(apiKey, success, failure, options) {
-    var description = 'Retrieve security grants for ' + apiKey,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.get(
-      Util.actionUrl("security", "apikeys", options) + apiKey + "/grants/",
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    self.requireConfig('apiKey');
+
+    PrecogHttp.get({
+      url:      self.securityUrl("apikeys") + "/" + apiKey + "/grants/",
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.addGrantToKey = function(apiKey, grant, success, failure, options) {
