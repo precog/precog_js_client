@@ -13,8 +13,9 @@
  *   progress: function(status) { }
  * })
  */
-var PrecogHttp = function(options) {
-  return this.http(options);
+
+function PrecogHttp(options) {
+  return PrecogHttp.http(options);
 };
 
 (function(PrecogHttp) {
@@ -100,15 +101,15 @@ var PrecogHttp = function(options) {
     return r;
   };
 
-  PrecogHttp.prototype.createAjax = function() {
+  PrecogHttp.createAjax = function() {
     if (window.XMLHttpRequest) return new XMLHttpRequest();
     else return new ActiveXObject("Microsoft.XMLHTTP");
   };
 
-  PrecogHttp.prototype.http = function(options) {
-    if (typeof window === 'undefined') return this.nodejs(options);
-    else if ('withCredentials' in this.createAjax()) return this.ajax(options);
-    else return this.jsonp(options);
+  PrecogHttp.http = function(options) {
+    if (typeof window === 'undefined') return PrecogHttp.nodejs(options);
+    else if ('withCredentials' in PrecogHttp.createAjax()) return PrecogHttp.ajax(options);
+    else return PrecogHttp.jsonp(options);
   };
 
   /**
@@ -124,7 +125,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.prototype.ajax = Util.defopts(function(options) {
+  PrecogHttp.ajax = Util.defopts(function(options) {
     var parseResponseHeaders = function(xhr) {
       var headers = {};
 
@@ -156,56 +157,61 @@ var PrecogHttp = function(options) {
       return headers;
     };
 
-    var request = this.createAjax();
+    var future = new Future(function(resolver) {
+      var request = PrecogHttp.createAjax();
 
-    request.open(options.method, options.url, options.sync);
+      request.open(options.method, options.url, options.sync);
 
-    request.upload && (request.upload.onprogress = function(e) {
-      if (e.lengthComputable) {
-        options.progress({loaded : e.loaded, total : e.total });
+      request.upload && (request.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          options.progress({loaded : e.loaded, total : e.total });
+        }
+      });
+
+      request.onreadystatechange = function() {
+        var headers = parseResponseHeaders(request);
+
+        if (request.readyState === 4) {
+          var content = this.responseText;
+
+          if (content != null) {
+            try {
+              var ctype = headers['Content-Type'];
+              if (ctype == 'application/json' || ctype == 'text/json')
+                content = JSON.parse(this.responseText);
+            } catch (e) {}
+          }
+
+          Util.responseCallback({
+            headers:    headers,
+            content:    content,
+            status:     request.status,
+            statusText: request.statusText
+          }, resolver.accept, resolver.reject);
+        }
+      };
+
+      for (var name in options.headers) {
+        var value = options.headers[name];
+        request.setRequestHeader(name, value);
+      }
+
+      if (options.content !== undefined) {
+        if (options.headers['Content-Type']) {
+          request.send(options.content);
+        } else {
+          request.setRequestHeader('Content-Type', 'application/json');
+          request.send(JSON.stringify(options.content));
+        }
+      } else {
+        request.send(null);
       }
     });
 
-    request.onreadystatechange = function() {
-      var headers = parseResponseHeaders(request);
+    if(options.success) future.then(options.success, undefined);
+    if(options.failure) future.then(undefined, options.failure);
 
-      if (request.readyState === 4) {
-        var content = this.responseText;
-
-        if (content != null) {
-          try {
-            var ctype = headers['Content-Type'];
-            if (ctype == 'application/json' || ctype == 'text/json')
-              content = JSON.parse(this.responseText);
-          } catch (e) {}
-        }
-
-        Util.responseCallback({
-          headers:    headers, 
-          content:    content, 
-          status:     request.status,
-          statusText: request.statusText
-        }, success, failure);
-      }
-    };
-
-    for (var name in options.headers) {
-      var value = options.headers[name];
-      request.setRequestHeader(name, value);
-    }
-
-    if (options.content !== undefined) {
-      if (options.headers['Content-Type']) {
-        request.send(options.content);
-      } else {
-        request.setRequestHeader('Content-Type', 'application/json');
-        request.send(JSON.stringify(options.content));
-      }
-    } else {
-      request.send(null);
-    }
-
-    return request;
+    return future;
   });
 
   /**
@@ -221,63 +227,70 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.prototype.jsonp = Util.defopts(function(options) {
+  PrecogHttp.jsonp = Util.defopts(function(options) {
     var random = Math.floor(Math.random() * 214748363);
     var fname  = 'PrecogJsonpCallback' + random.toString();
 
-    window[fname] = function(content, meta) {
-      Util.responseCallback({
-        headers:    meta.headers, 
-        content:    content, 
-        status:     meta.status.code, 
-        statusText: meta.status.reason
-      }, success, failure);
+    var future = new Future(function(resolver) {
+      window[fname] = function(content, meta) {
+        Util.responseCallback({
+          headers:    meta.headers,
+          content:    content,
+          status:     meta.status.code,
+          statusText: meta.status.reason
+        }, resolver.accept, resolver.reject);
 
-      document.head.removeChild(document.getElementById(fname));
+        document.head.removeChild(document.getElementById(fname));
 
-      try{
-        delete window[fname];
-      } catch(e) {
-        window[fname] = undefined;
+        try{
+          delete window[fname];
+        } catch(e) {
+          window[fname] = undefined;
+        }
+      };
+
+      var query = {
+        method:   options.method,
+        callback: fname
+      };
+
+      if (options.headers && Util.objsize(options.headers) > 0) {
+        query.headers = JSON.stringify(options.headers);
       }
-    };
+      if (options.content !== undefined) {
+        query.content = JSON.stringify(options.content);
+      }
 
-    var query = {
-      method:   options.method,
-      callback: fname
-    };
+      var script = document.createElement('SCRIPT');
 
-    if (options.headers && Util.objsize(options.headers) > 0) {
-      query.headers = JSON.stringify(options.headers);
-    }
-    if (options.content !== undefined) {
-      query.content = JSON.stringify(options.content);
-    }
+      if (script.addEventListener) {
+        script.addEventListener('error',
+                                function(e) {
+                                  options.failure({
+                                    headers:    {},
+                                    content:    undefined,
+                                    statusText: e.message || 'Failed to load script from server',
+                                    statusCode: 400
+                                  });
+                                },
+                                true
+                               );
+      }
 
-    var script = document.createElement('SCRIPT');
+      script.setAttribute('type', 'text/javascript');
+      script.setAttribute('src',  Util.addQuery(options.url, query));
+      script.setAttribute('id',   fname);
 
-    if (script.addEventListener) {
-      script.addEventListener('error', 
-        function(e) {
-          options.failure({
-            headers:    {},
-            content:    undefined,
-            statusText: e.message || 'Failed to load script from server',
-            statusCode: 400
-          });
-        }, 
-        true
-      );
-    }
+      // Workaround for document.head being undefined.
+      if (!document.head) document.head = document.getElementsByTagName('head')[0];
 
-    script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src',  Util.addQuery(options.url, query));
-    script.setAttribute('id',   fname);
+      document.head.appendChild(script);
+    });
 
-    // Workaround for document.head being undefined.
-    if (!document.head) document.head = document.getElementsByTagName('head')[0];
+    if(options.success) future.then(options.success, undefined);
+    if(options.failure) future.then(undefined, options.failure);
 
-    document.head.appendChild(script);
+    return future;
   });
 
   /**
@@ -293,7 +306,7 @@ var PrecogHttp = function(options) {
    *   progress: function(status) { }
    * })
    */
-  PrecogHttp.prototype.nodejs = Util.defopts(function(options) {
+  PrecogHttp.nodejs = Util.defopts(function(options) {
     var reqOptions = require('url').parse(options.path);
     var http = require(reqOptions.protocol == 'https://' ? 'https' : 'http');
 
@@ -303,51 +316,56 @@ var PrecogHttp = function(options) {
     if (options.content && !options.headers['Content-Type'])
       reqOptions.headers['Content-Type'] = 'application/json';
 
-    var request = http.request(reqOptions, function(response) {
-      var data = '';
-      response.setEncoding('utf8');
-      response.on('data', function (chunk) {
-        data += chunk;
+    var future = new Future(function(resolver) {
+      var request = http.request(reqOptions, function(response) {
+        var data = '';
+        response.setEncoding('utf8');
+        response.on('data', function (chunk) {
+          data += chunk;
 
-        if (response.headers['Content-Length'])
-          options.progress({loaded : data.length, total : response.headers['Content-Length'] });
+          if (response.headers['Content-Length'])
+            options.progress({loaded : data.length, total : response.headers['Content-Length'] });
+        });
+        response.on('close', function() {
+          Util.responseCallback({
+            headers:    response.headers,
+            content:    data,
+            status:     response.statusCode,
+            statusText: 'statusText not available from nodejs http module'
+          }, resolver.accept, resolver.reject);
+        });
       });
-      response.on('close', function() {
-        Util.responseCallback({
-          headers:    response.headers, 
-          content:    data, 
-          status:     response.statusCode,
-          statusText: 'statusText not available from nodejs http module'
-        }, success, failure);
-      });
+
+      if (options.content) {
+        request.write(options.headers['Content-Type'] ? options.content : JSON.stringify(options.content));
+      }
+
+      request.end();
     });
 
-    if (options.content) {
-      request.write(options.headers['Content-Type'] ? options.content : JSON.stringify(options.content));
-    }
+    if(options.success) future.then(options.success, undefined);
+    if(options.failure) future.then(undefined, options.failure);
 
-    request.end();
-
-    return request;
+    return future;
   });
 
-  PrecogHttp.prototype.get = function(options) {
-    this.http(Util.merge(options, {method: "GET"}));
+  PrecogHttp.get = function(options) {
+    return PrecogHttp.http(Util.merge(options, {method: "GET"}));
   };
 
-  PrecogHttp.prototype.put = function(options) {
-    this.http(Util.merge(options, {method: "PUT"}));
+  PrecogHttp.put = function(options) {
+    return PrecogHttp.http(Util.merge(options, {method: "PUT"}));
   };
 
-  PrecogHttp.prototype.post = function(options) {
-    this.http(Util.merge(options, {method: "POST"}));
+  PrecogHttp.post = function(options) {
+    return PrecogHttp.http(Util.merge(options, {method: "POST"}));
   };
 
-  PrecogHttp.prototype.delete0 = function(options) {
-    this.http(Util.merge(options, {method: "DELETE"}));
+  PrecogHttp.delete0 = function(options) {
+    return PrecogHttp.http(Util.merge(options, {method: "DELETE"}));
   };
 
-  PrecogHttp.prototype.patch = function(options) {
-    this.http(Util.merge(options, {method: "PATCH"}));
+  PrecogHttp.patch = function(options) {
+    return PrecogHttp.http(Util.merge(options, {method: "PATCH"}));
   };
 })(PrecogHttp);

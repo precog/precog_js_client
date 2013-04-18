@@ -105,7 +105,7 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.accountsUrl("accounts"),
       content:  account,
       success:  Util.defSuccess(success),
@@ -133,7 +133,7 @@ var Precog = function(config) {
 
     Util.requireParam(email, 'email');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
       content:  {email: email},
       success:  Util.defSuccessSingletonArray(success),
@@ -166,7 +166,7 @@ var Precog = function(config) {
     Util.requireField(info, 'accountId');
     Util.requireField(info, 'grantId');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.accountsUrl("accounts/" + info.accountId + "/grants/"),
       content:  {grantId: info.grant},
       success:  Util.defSuccess(success),
@@ -241,7 +241,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.securityUrl("apikeys"),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -255,7 +255,7 @@ var Precog = function(config) {
     Util.requireParam(grants, 'grants');
     self.requireConfig('apiKey');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.securityUrl("apikeys"),
       content:  grants,
       query:    {apiKey: self.config.apiKey},
@@ -269,7 +269,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.securityUrl("apikeys") + "/" + apiKey,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -283,7 +283,7 @@ var Precog = function(config) {
     Util.requireParam(apiKey, 'apiKey');
     self.requireConfig('apiKey');
 
-    PrecogHttp.delete0({
+    return PrecogHttp.delete0({
       url:      self.securityUrl("apikeys") + "/" + apiKey,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -297,7 +297,7 @@ var Precog = function(config) {
     Util.requireParam(apiKey, 'apiKey');
     self.requireConfig('apiKey');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.securityUrl("apikeys") + "/" + apiKey + "/grants/",
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -313,7 +313,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/",
       content:  info.grant,
       query:    {apiKey: self.config.apiKey},
@@ -330,7 +330,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.delete0({
+    return PrecogHttp.delete0({
       url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/" + info.grantId,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -345,7 +345,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.securityUrl("grants"),
       content:  grant,
       query:    {apiKey: self.config.apiKey},
@@ -361,7 +361,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.securityUrl("grants") + "/" + grantId,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -376,7 +376,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.delete0({
+    return PrecogHttp.delete0({
       url:      self.securityUrl("grants") + "/" + grantId,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -391,7 +391,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.get({
+    return PrecogHttp.get({
       url:      self.securityUrl("grants") + "/" + grantId + "/children/",
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -407,7 +407,7 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    PrecogHttp.post({
+    return PrecogHttp.post({
       url:      self.securityUrl("grants") + "/" + info.parentGrantId + "/children/",
       content:  info.childGrant,
       query:    {apiKey: self.config.apiKey},
