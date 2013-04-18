@@ -82,6 +82,11 @@ var Precog = function(config) {
     return this.serviceUrl("metadata", 1, path);
   };
 
+  Precog.prototype.requireConfig = function(name) {
+    if (this.config == null || this.config[name] == null) 
+      Util.error('The configuration field "' + name + '" may not be null or undefined');
+  };
+
   // ****************
   // *** ACCOUNTS ***
   // ****************
@@ -109,9 +114,9 @@ var Precog = function(config) {
   };
 
   Precog.prototype.requestResetPassword = function(email, success, failure) {
-    Util.requireParam(email, 'email');
-
     var self = this;
+
+    Util.requireParam(email, 'email');
 
     self.lookupAccountId(email, function(accountId) {
       PrecogHttp.post({
@@ -124,9 +129,9 @@ var Precog = function(config) {
   };
 
   Precog.prototype.lookupAccountId = function(email, success, failure) {
-    Util.requireParam(email, 'email');
-
     var self = this;
+
+    Util.requireParam(email, 'email');
 
     PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
@@ -137,10 +142,10 @@ var Precog = function(config) {
   };
 
   Precog.prototype.describeAccount = function(account, success, failure) {
+    var self = this;
+
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
-
-    var self = this;
 
     self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.get({
@@ -156,10 +161,10 @@ var Precog = function(config) {
   };
 
   Precog.prototype.addGrantToAccount = function(grantInfo, success, failure) {
+    var self = this;
+
     Util.requireField(grantInfo, 'accountId');
     Util.requireField(grantInfo, 'grantId');
-
-    var self = this;
 
     PrecogHttp.get({
       url:      self.accountsUrl("accounts/" + accountId + "/grants/"),
@@ -169,10 +174,10 @@ var Precog = function(config) {
   };
 
   Precog.prototype.currentPlan = function(account, success, failure) {
+    var self = this;
+
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
-
-    var self = this;
 
     self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.get({
@@ -188,11 +193,11 @@ var Precog = function(config) {
   };
 
   Precog.prototype.changePlan = function(account, success, failure) {
+    var self = this;
+
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
     Util.requireField(account, 'plan');
-
-    var self = this;
 
     self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.put({
@@ -209,10 +214,10 @@ var Precog = function(config) {
   };
 
   Precog.prototype.deletePlan = function(email, password, accountId, success, failure, options) {
+    var self = this;
+
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
-
-    var self = this;
 
     self.lookupAccountId(account.email, function(accountId) {
       PrecogHttp.delete0({
@@ -230,16 +235,17 @@ var Precog = function(config) {
   // ****************
   // *** SECURITY ***
   // ****************
-  Precog.prototype.listKeys = function(success, failure, options) {
-    var description = 'Precog Security List Keys',
-        parameters = { apiKey : (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.listKeys = function(success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.get(
-      Util.actionUrl("security", "apikeys", options),
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    self.requireConfig('apiKey');
+
+    PrecogHttp.get({
+      url:      self.securityUrl("apikeys"),
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.createKey = function(grants, success, failure, options) {
