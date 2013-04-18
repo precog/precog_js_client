@@ -21,33 +21,33 @@ var PrecogHttp = function(options) {
 (function(PrecogHttp) {
   var Util = {};
 
-  Util.defopts = function(f) {
-    var addQuery = function(url, query) {
-      var hashtagpos = url.lastIndexOf('#'), hash = '';
-      if (hashtagpos >= 0) {
-        hash = "#" + url.substr(hashtagpos + 1);
-        url  = url.substr(0, hashtagpos);
-      }
-      var suffix = url.indexOf('?') == -1 ? '?' : '&';
-      var queries = [];
-      for (var name in query) {
-        if (query[name] !== null) {
-          var value = query[name].toString();
+  Util.addQuery = function(url, query) {
+    var hashtagpos = url.lastIndexOf('#'), hash = '';
+    if (hashtagpos >= 0) {
+      hash = "#" + url.substr(hashtagpos + 1);
+      url  = url.substr(0, hashtagpos);
+    }
+    var suffix = url.indexOf('?') == -1 ? '?' : '&';
+    var queries = [];
+    for (var name in query) {
+      if (query[name] !== null) {
+        var value = query[name].toString();
 
-          if (value.length > 0) {
-            queries.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
-          }
+        if (value.length > 0) {
+          queries.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
         }
       }
-      if (queries.length === 0) return url + hash;
-      else return url + suffix + queries.join('&') + hash;
-    };
+    }
+    if (queries.length === 0) return url + hash;
+    else return url + suffix + queries.join('&') + hash;
+  };
 
+  Util.defopts = function(f) {
     return function(options) {
       var o = {};
 
       o.method   = options.method || 'GET';
-      o.url      = addQuery(options.url, options.query);
+      o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
       o.success  = options.success;
@@ -226,7 +226,7 @@ var PrecogHttp = function(options) {
       extraQuery.content = JSON.stringify(options.content);
     }
 
-    var fullUrl = addQuery(options.url, extraQuery);
+    var fullUrl = Util.addQuery(options.url, extraQuery);
 
     var script = document.createElement('SCRIPT');
 
