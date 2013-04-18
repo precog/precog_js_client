@@ -606,7 +606,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.delete0({
-      url:      self.dataUrl("async/fs") + "/" + info.path,
+      url:      self.dataUrl("async/fs/" + info.path),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -624,14 +624,15 @@ var Precog = function(config) {
 
     self.requireConfig('apiKey');
 
-    var query = {apiKey: self.config.apiKey, q: info.query};
-    if(typeof info.limit != 'undefined') query.limit = info.limit;
-    if(typeof info.skip != 'undefined') query.skip = info.skip;
-    if(typeof info.sortOn != 'undefined') query.sortOn = info.sortOn;
-
     return PrecogHttp.get({
       url:      self.analysisUrl("fs") + "/" + info.path,
-      query:    query,
+      query:    {
+                  apiKey: self.config.apiKey, 
+                  q:      info.query,
+                  limit:  info.limit,
+                  skip:   info.skip,
+                  sortOn: info.sortOn
+                },
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
