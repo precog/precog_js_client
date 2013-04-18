@@ -336,7 +336,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.securityUrl("apikeys") + "/" + apiKey,
+      url:      self.securityUrl("apikeys/" + apiKey),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -356,7 +356,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.delete0({
-      url:      self.securityUrl("apikeys") + "/" + apiKey,
+      url:      self.securityUrl("apikeys/" + apiKey),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -376,7 +376,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.securityUrl("apikeys") + "/" + apiKey + "/grants/",
+      url:      self.securityUrl("apikeys/" + apiKey + "/grants/"),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -398,7 +398,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.post({
-      url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/",
+      url:      self.securityUrl("apikeys/" + info.apiKey + "/grants/"),
       content:  info.grant,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -424,7 +424,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.delete0({
-      url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/" + info.grantId,
+      url:      self.securityUrl("apikeys/" + info.apiKey + "/grants/" + info.grantId),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -477,7 +477,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.securityUrl("grants") + "/" + grantId,
+      url:      self.securityUrl("grants/" + grantId),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -499,7 +499,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.delete0({
-      url:      self.securityUrl("grants") + "/" + grantId,
+      url:      self.securityUrl("grants/" + grantId),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -520,7 +520,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.securityUrl("grants") + "/" + grantId + "/children/",
+      url:      self.securityUrl("grants/" + grantId + "/children/"),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -545,7 +545,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.post({
-      url:      self.securityUrl("grants") + "/" + info.parentGrantId + "/children/",
+      url:      self.securityUrl("grants/" + info.parentGrantId + "/children/"),
       content:  info.childGrant,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -571,7 +571,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.metadataUrl("fs") + "/" + path,
+      url:      self.metadataUrl("fs/" + path),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -625,7 +625,7 @@ var Precog = function(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.analysisUrl("fs") + "/" + info.path,
+      url:      self.analysisUrl("fs/" + info.path),
       query:    {
                   apiKey: self.config.apiKey, 
                   q:      info.query,
