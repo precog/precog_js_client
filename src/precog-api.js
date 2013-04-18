@@ -126,8 +126,8 @@ var Precog = function(config) {
 
     Util.requireParam(email, 'email');
 
-    self.lookupAccountId(email, function(accountId) {
-      PrecogHttp.post({
+    return self.lookupAccountId(email).then(function(accountId) {
+      return PrecogHttp.post({
         url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
         content:  {email: email},
         success:  Util.defSuccess(success),
@@ -167,8 +167,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.get({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -215,8 +215,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.get({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -241,8 +241,8 @@ var Precog = function(config) {
     Util.requireField(account, 'password');
     Util.requireField(account, 'plan');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.put({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.put({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -267,8 +267,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.delete0({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.delete0({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -581,10 +581,63 @@ var Precog = function(config) {
   // ************
   // *** DATA ***
   // ************
+  Precog.prototype.ingest = function(info, success, failure) {
+    var self = this;
 
+    Util.requireField(info, 'path');
+    Util.requireField(info, 'data');
+
+    self.requireConfig('apiKey');
+
+    var query = {apiKey: self.config.apiKey};
+    if(typeof info.ownerAccountId != 'undefined') query.ownerAccountId = info.ownerAccountId;
+
+    return PrecogHttp.post({
+      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs") + "/" + info.path,
+      content:  info.data,
+      query:    query,
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  Precog.prototype.deletePath = function(path, success, failure) {
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
+    self.requireConfig('apiKey');
+
+    return PrecogHttp.delete0({
+      url:      self.dataUrl("async/fs") + "/" + info.path,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
 
   // ****************
   // *** ANALYSIS ***
   // ****************
+  Precog.prototype.query = function(info, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'path');
+    Util.requireField(info, 'query');
+
+    self.requireConfig('apiKey');
+
+    var query = {apiKey: self.config.apiKey, q: info.query};
+    if(typeof info.limit != 'undefined') query.limit = info.limit;
+    if(typeof info.skip != 'undefined') query.skip = info.skip;
+    if(typeof info.sortOn != 'undefined') query.sortOn = info.sortOn;
+
+    return PrecogHttp.get({
+      url:      self.analysisUrl("fs") + "/" + info.path,
+      query:    query,
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
 
 })(Precog);
