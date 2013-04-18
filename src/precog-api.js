@@ -33,9 +33,11 @@ var Precog = function(config) {
   Util.sanitizePath = function(path) {
     return (path + "/").replace(/[\/]+/g, "/");
   };
-  Util.composef = function(f, f0) {
+  Util.composef = function(f, g) {
+    if (f == null || g == null) return undefined;
+
     return function(v) {
-      return f(f0(v));
+      return f(g(v));
     };
   };
   Util.extractField = function(field) { return function(v) { return v[field]; }; };
@@ -282,7 +284,14 @@ var Precog = function(config) {
   // ****************
   // *** SECURITY ***
   // ****************
-  Precog.prototype.listKeys = function(success, failure) {
+
+  /**
+   * Lists API keys.
+   *
+   * @example
+   * Precog.listApiKeys();
+   */
+  Precog.prototype.listApiKeys = function(success, failure) {
     var self = this;
 
     self.requireConfig('apiKey');
