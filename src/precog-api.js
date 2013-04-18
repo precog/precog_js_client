@@ -416,4 +416,21 @@ var Precog = function(config) {
     });
   };
 
+  // ****************
+  // *** METADATA ***
+  // ****************
+  Precog.prototype.retrieveMetadata = function(path, success, failure, options) {
+    path = Util.trimPath(path);
+    options = options || { type : "" };
+
+    var description = 'Precog retrieve metadata ' + options.type,
+        parameters = { apiKey : options.apiKey || $.Config.apiKey };
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    return http.get(
+      Util.actionUrl("meta", "fs", options) + Util.actionPath(path, options) + "#" + options.type,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
 })(Precog);
