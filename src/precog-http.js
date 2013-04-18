@@ -3,6 +3,7 @@
  *
  * @example
  * PrecogHttp({
+ *   basicAuth: {username: "foo", password: "bar"},
  *   method: "GET",
  *   url: "http://api.precog.com",
  *   query: { apiKey: "12321323" },
@@ -20,6 +21,10 @@ var PrecogHttp = function(options) {
 
 (function(PrecogHttp) {
   var Util = {};
+
+  Util.makeBaseAuth = function(user, password) {
+    return "Basic " + Base64.encode(user + ':' + password);
+  };
 
   Util.addQuery = function(url, query) {
     var hashtagpos = url.lastIndexOf('#'), hash = '';
@@ -54,6 +59,11 @@ var PrecogHttp = function(options) {
       o.failure  = options.failure || function() {};
       o.progress = options.progress || function() {};
 
+      if (options.basicAuth) {
+        o.headers['Authorization'] = 
+          Util.makeBaseAuth(options.basicAuth.username, options.basicAuth.password);
+      }
+
       return f(o);
     };
   };
@@ -86,6 +96,7 @@ var PrecogHttp = function(options) {
   /**
    * @example
    * PrecogHttp.ajax({
+   *   basicAuth: {username: "foo", password: "bar"},
    *   method: "GET",
    *   url: "http://api.precog.com",
    *   query: { apiKey: "12321323" },
@@ -182,6 +193,7 @@ var PrecogHttp = function(options) {
   /**
    * @example
    * PrecogHttp.jsonp({
+   *   basicAuth: {username: "foo", password: "bar"},
    *   method: "GET",
    *   url: "http://api.precog.com",
    *   query: { apiKey: "12321323" },
@@ -255,6 +267,7 @@ var PrecogHttp = function(options) {
   /**
    * @example
    * PrecogHttp.nodejs({
+   *   basicAuth: {username: "foo", password: "bar"},
    *   method: "GET",
    *   url: "http://api.precog.com",
    *   query: { apiKey: "12321323" },
