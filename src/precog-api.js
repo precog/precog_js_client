@@ -492,10 +492,63 @@ var Precog = function(config) {
   // ************
   // *** DATA ***
   // ************
+  Precog.prototype.ingest = function(info, success, failure) {
+    var self = this;
 
+    Util.requireField(info, 'path');
+    Util.requireField(info, 'data');
+
+    self.requireConfig('apiKey');
+
+    var query = {apiKey: self.config.apiKey};
+    if(typeof info.ownerAccountId != 'undefined') query.ownerAccountId = info.ownerAccountId;
+
+    return PrecogHttp.post({
+      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs") + "/" + info.path,
+      content:  info.data,
+      query:    query,
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  Precog.prototype.deletePath = function(path, success, failure) {
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
+    self.requireConfig('apiKey');
+
+    return PrecogHttp.delete0({
+      url:      self.dataUrl("async/fs") + "/" + info.path,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
 
   // ****************
   // *** ANALYSIS ***
   // ****************
+  Precog.prototype.query = function(info, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'path');
+    Util.requireField(info, 'query');
+
+    self.requireConfig('apiKey');
+
+    var query = {apiKey: self.config.apiKey, q: info.query};
+    if(typeof info.limit != 'undefined') query.limit = info.limit;
+    if(typeof info.skip != 'undefined') query.skip = info.skip;
+    if(typeof info.sortOn != 'undefined') query.sortOn = info.sortOn;
+
+    return PrecogHttp.get({
+      url:      self.analysisUrl("fs") + "/" + info.path,
+      query:    query,
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
 
 })(Precog);
