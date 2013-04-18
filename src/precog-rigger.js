@@ -20,6 +20,7 @@
   //= ext/Base64.js
   //= ext/json2.js
   //= ext/sessionstorage.1.4.js
+  //= ext/Future.js
   //= precog-http.js
   //= precog-api.js
 
