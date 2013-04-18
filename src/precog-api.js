@@ -263,15 +263,16 @@ var Precog = function(config) {
   };
 
   Precog.prototype.describeKey = function(apiKey, success, failure, options) {
-    var description = 'Describe security Key for ' + apiKey,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.get(
-      Util.actionUrl("security", "apikeys", options) + apiKey,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    self.requireConfig('apiKey');
+
+    PrecogHttp.get({
+      url:      self.securityUrl("apikeys") + "/" + apiKey,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.deleteKey = function(apiKey, success, failure, options) {
