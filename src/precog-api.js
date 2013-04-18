@@ -249,16 +249,17 @@ var Precog = function(config) {
   };
 
   Precog.prototype.createKey = function(grants, success, failure, options) {
-    var description = 'Create security Key (' + JSON.stringify(grants) + ')',
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.post(
-      Util.actionUrl("security", "apikeys", options),
-      grants,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    self.requireConfig('apiKey');
+
+    PrecogHttp.post({
+      url:      self.securityUrl("apikeys"),
+      content:  grants,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.describeKey = function(apiKey, success, failure, options) {
