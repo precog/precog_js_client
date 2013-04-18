@@ -212,26 +212,38 @@ var PrecogHttp = function(options) {
       }
     };
 
-    var extraQuery = {};
+    var query = {};
 
-    extraQuery.method = options.method;
+    query.method = options.method;
 
     if (options.headers && Util.objsize(options.headers) > 0) {
-      extraQuery.headers = JSON.stringify(options.headers);
+      query.headers = JSON.stringify(options.headers);
     }
 
-    extraQuery.callback = fname;
+    query.callback = fname;
 
     if (options.content !== undefined) {
-      extraQuery.content = JSON.stringify(options.content);
+      query.content = JSON.stringify(options.content);
     }
-
-    var fullUrl = Util.addQuery(options.url, extraQuery);
 
     var script = document.createElement('SCRIPT');
 
+    if (script.addEventListener) {
+      script.addEventListener('error', 
+        function(e) {
+          options.failure({
+            headers:    {},
+            content:    undefined,
+            statusText: e.message || 'Failed to load script from server',
+            statusCode: 400
+          });
+        }, 
+        true
+      );
+    }
+
     script.setAttribute('type', 'text/javascript');
-    script.setAttribute('src',  fullUrl);
+    script.setAttribute('src',  Util.addQuery(options.url, query));
     script.setAttribute('id',   fname);
 
     // Workaround for document.head being undefined.
