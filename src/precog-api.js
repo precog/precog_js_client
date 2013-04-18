@@ -132,8 +132,8 @@ var Precog = function(config) {
   };
 
   Precog.prototype.describeAccount = function(account, success, failure) {
-    Util.requireField(account.email, 'email');
-    Util.requireField(account.password, 'password');
+    Util.requireField(account, 'email');
+    Util.requireField(account, 'password');
 
     var self = this;
 
@@ -148,6 +148,56 @@ var Precog = function(config) {
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
+  };
+
+  Precog.prototype.addGrantToAccount = function(grantInfo, success, failure) {
+    Util.requireField(grantInfo, 'accountId');
+    Util.requireField(grantInfo, 'grantId');
+
+    var self = this;
+
+    PrecogHttp.get({
+      basicAuth: {
+        username: grantInfo.email,
+        password: grantInfo.password
+      },
+      url:      self.accountsUrl("accounts/" + accountId + "/grants/"),
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  Precog.prototype.describePlan = function(email, password, accountId, success, failure, options) {
+    var description = 'Describe plan ' + accountId;
+    console.log(accountId);
+    http.get(
+      Util.actionUrl("accounts", "accounts", options) +accountId + "/plan",
+      Util.createCallbacks(success, failure, description),
+      null,
+      { "Authorization" : Util.makeBaseAuth(email, password) }
+    );
+    console.log( Util.actionUrl("accounts", "accounts", accountId, options) + "plan");
+  };
+
+  Precog.prototype.changePlan = function(email, password, accountId, type, success, failure, options) {
+    var description = 'Change plan to '+type+' for account ' + accountId;
+    http.put(
+      Util.actionUrl("accounts", "accounts", options) + accountId + "/plan",
+      { "type" : type },
+      Util.createCallbacks(success, failure, description),
+      null,
+      { "Authorization" : Util.makeBaseAuth(email, password) }
+    );
+  };
+
+  Precog.prototype.deletePlan = function(email, password, accountId, success, failure, options) {
+    var description = 'Delete account ' + accountId;
+    http.remove(
+      Util.actionUrl("accounts", "accounts", options) +accountId + "/plan",
+      Util.createCallbacks(success, failure, description),
+      null,
+      { "Authorization" : Util.makeBaseAuth(email, password) }
+    );
   };
 
 })(Precog);
