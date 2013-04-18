@@ -127,8 +127,8 @@ var Precog = function(config) {
 
     Util.requireParam(email, 'email');
 
-    self.lookupAccountId(email, function(accountId) {
-      PrecogHttp.post({
+    return self.lookupAccountId(email).then(function(accountId) {
+      return PrecogHttp.post({
         url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
         content:  {email: email},
         success:  Util.defSuccess(success),
@@ -168,8 +168,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.get({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -216,8 +216,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.get({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -242,8 +242,8 @@ var Precog = function(config) {
     Util.requireField(account, 'password');
     Util.requireField(account, 'plan');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.put({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.put({
         basicAuth: {
           username: account.email,
           password: account.password
@@ -268,8 +268,8 @@ var Precog = function(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    self.lookupAccountId(account.email, function(accountId) {
-      PrecogHttp.delete0({
+    return self.lookupAccountId(account.email).then(function(accountId) {
+      return PrecogHttp.delete0({
         basicAuth: {
           username: account.email,
           password: account.password
