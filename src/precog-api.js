@@ -249,7 +249,7 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.createKey = function(grants, success, failure, options) {
+  Precog.prototype.createKey = function(grants, success, failure) {
     var self = this;
 
     Util.requireParam(grants, 'grants');
@@ -264,7 +264,7 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describeKey = function(apiKey, success, failure, options) {
+  Precog.prototype.describeKey = function(apiKey, success, failure) {
     var self = this;
 
     self.requireConfig('apiKey');
@@ -277,7 +277,7 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.deleteKey = function(apiKey, success, failure, options) {
+  Precog.prototype.deleteKey = function(apiKey, success, failure) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -291,7 +291,7 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.retrieveGrants = function(apiKey, success, failure, options) {
+  Precog.prototype.retrieveGrants = function(apiKey, success, failure) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -305,7 +305,7 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.addGrantToKey = function(info, success, failure, options) {
+  Precog.prototype.addGrantToKey = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'grant');
@@ -322,41 +322,51 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.removeGrant = function(apiKey, grantId, success, failure, options) {
-    var description = 'Remove grant '+grantId+' from key ' + apiKey,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.removeGrant = function(info, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.remove(
-      Util.actionUrl("security", "apikeys", options) + apiKey + "/grants/" + grantId,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireField(info, 'grantId');
+    Util.requireField(info, 'apiKey');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.delete0({
+      url:      self.securityUrl("apikeys") + "/" + info.apiKey + "/grants/" + info.grantId,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
-  Precog.prototype.createGrant = function(grant, success, failure, options) {
-    var description = 'Create new grant '+JSON.stringify(grant),
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.createGrant = function(grant, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.post(
-      Util.actionUrl("security", "grants", options),
-      grant,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireParam(grant, 'grant');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.post({
+      url:      self.securityUrl("grants"),
+      content:  grant,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
-  Precog.prototype.describeGrant = function(grantId, success, failure, options) {
-    var description = 'Describe grant ' + grantId,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.describeGrant = function(grantId, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.get(
-      Util.actionUrl("security", "grants", options) + grantId,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireParam(grantId, 'grantId');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.get({
+      url:      self.securityUrl("grants") + "/" + grantId,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.deleteGrant = function(grantId, success, failure, options) {
