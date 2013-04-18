@@ -54,9 +54,9 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success || (typeof console !== 'undefined' && console.info) || function() {};
-      o.failure  = options.failure || (typeof console !== 'undefined' && console.error) || function() {};
-      o.progress = options.progress || (typeof console !== 'undefined' && console.debug) || function() {};
+      o.success  = options.success || (typeof console !== 'undefined' && console.info.bind(console)) || function() {};
+      o.failure  = options.failure || (typeof console !== 'undefined' && console.error.bind(console)) || function() {};
+      o.progress = options.progress || (typeof console !== 'undefined' && console.debug.bind(console)) || function() {};
       o.sync     = options.sync || false;
 
       if (options.basicAuth) {
@@ -69,7 +69,7 @@ function PrecogHttp(options) {
   };
 
   Util.responseCallback = function(response, success, failure) {
-    if (request.status >= 200 && request.status < 300) {
+    if (response.status >= 200 && response.status < 300) {
       success(response);
     } else {
       failure(response);

@@ -1,5 +1,4 @@
-
-var Precog = function(config) {
+function Precog(config) {
   this.config = config;
 }
 
