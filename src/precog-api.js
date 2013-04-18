@@ -43,6 +43,26 @@ var Precog = function(config) {
     return Util.sanitizePath(fullpathDirty);
   };
 
+  Precog.prototype.accountsUrl = function(path) {
+    return this.serviceUrl("accounts", 1, path);
+  };
+
+  Precog.prototype.securityUrl = function(path) {
+    return this.serviceUrl("security", 1, path);
+  };
+
+  Precog.prototype.dataUrl = function(path) {
+    return this.serviceUrl("ingest", 1, path);
+  };
+
+  Precog.prototype.analysisUrl = function(path) {
+    return this.serviceUrl("analytics", 1, path);
+  };
+
+  Precog.prototype.metadataUrl = function(path) {
+    return this.serviceUrl("metadata", 1, path);
+  };
+
   /**
    * Creates a new account with the specified email and password. In order for 
    * this function to succeed, there must exist no account with the specified
@@ -56,7 +76,7 @@ var Precog = function(config) {
     Util.requireField(account, 'password');
 
     PrecogHttp.post({
-      url:      serviceUrl("accounts", 1, "accounts"),
+      url:      this.serviceUrl("accounts", 1, "accounts"),
       content:  account,
       success:  success,
       failure:  failure
@@ -64,13 +84,14 @@ var Precog = function(config) {
   };
 
   Precog.prototype.requestResetPassword = function(email, success, failure, options) {
-    Precog.findAccount(email, function(accountId) {
-      http.post(
-        Util.actionUrl("accounts","accounts", options) + accountId + "/password/reset",
-        { "email" : email },
-        Util.createCallbacks(success, failure, description),
-        null
-      );
+    var self = this;
+
+    self.lookupAccountId(email, function(accountId) {
+      PrecogHttp.post({
+        url:      self.serviceUrl("accounts", 1, accounts + "/" + accountId + "/password/reset"),
+        content:  {email: email},
+        success:  success
+      });
     }, failure);
   };
 
