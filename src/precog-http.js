@@ -152,7 +152,7 @@ var PrecogHttp = function(options) {
       return headers;
     };
 
-    var request = PrecogHttp.createAjax();
+    var request = this.createAjax();
 
     request.open(options.method, options.url, options.sync);
 

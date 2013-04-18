@@ -13,12 +13,35 @@ var Precog = function(config) {
     Explore:  "explore"
   };
 
-  function error(msg) {
-    if (typeof console != 'undefined') {
-      console.error(msg);
-    }
+  var Util = {};
+
+  Util.error = function(msg) {
+    if (typeof console != 'undefined') console.error(msg);
     throw new Error(msg);
-  }
+  };
+  Util.requireParam = function(v, name) {
+    if (v == null) Util.error('The parameter "' + name + '" may not be null or undefined');
+  };
+  Util.requireField = function(v, name) {
+    if (v[name] == null) Util.error('The field "' + name + '" may not be null or undefined');
+  };
+  Util.removeTrailingSlash = function(path) {
+    if (path == null || path.length === 0) return path;
+    else if (path.substr(path.length - 1) == "/") return path.substr(0, path.length - 1);
+    else return path;
+  };
+  Util.sanitizePath = function(path) {
+    return (path + "/").replace(/[\/]+/g, "/");
+  };
+
+  Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
+    Util.requireField(this.config, "analyticsService");
+
+    var fullpathDirty = this.config.analyticsService + "/" + 
+                        serviceName + "/v" + serviceVersion + "/" + (path || '');
+
+    return Util.sanitizePath(fullpathDirty);
+  };
 
   /**
    * Creates a new account with the specified email and password. In order for 
@@ -29,18 +52,15 @@ var Precog = function(config) {
    * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
    */
   Precog.prototype.createAccount = function(account, success, failure, options) {
-    if (account.email == null) error("Email must be specified for account creation");
-    if (account.password == null) error("Password must be specified for account creation");
+    Util.requireField(account, 'email');
+    Util.requireField(account, 'password');
 
     PrecogHttp.post({
-
+      url:      serviceUrl("accounts", 1, "accounts"),
+      content:  account,
+      success:  success,
+      failure:  failure
     });
-    http.post(
-      Util.actionUrl("accounts","accounts", options),
-      account,
-      Util.createCallbacks(success, failure, description),
-      null
-    );
   };
 
   Precog.prototype.requestResetPassword = function(email, success, failure, options) {
