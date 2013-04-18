@@ -82,6 +82,10 @@ var Precog = function(config) {
     return this.serviceUrl("metadata", 1, path);
   };
 
+  // ****************
+  // *** ACCOUNTS ***
+  // ****************
+
   /**
    * Creates a new account with the specified email and password. In order for 
    * this function to succeed, there must exist no account with the specified
@@ -221,6 +225,157 @@ var Precog = function(config) {
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
+  };
+
+  // ****************
+  // *** SECURITY ***
+  // ****************
+  Precog.prototype.listKeys = function(success, failure, options) {
+    var description = 'Precog Security List Keys',
+        parameters = { apiKey : (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.get(
+      Util.actionUrl("security", "apikeys", options),
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.createKey = function(grants, success, failure, options) {
+    var description = 'Create security Key (' + JSON.stringify(grants) + ')',
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.post(
+      Util.actionUrl("security", "apikeys", options),
+      grants,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.describeKey = function(apiKey, success, failure, options) {
+    var description = 'Describe security Key for ' + apiKey,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.get(
+      Util.actionUrl("security", "apikeys", options) + apiKey,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.deleteKey = function(apiKey, success, failure, options) {
+    var description = 'Delete security Key for ' + apiKey,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.remove(
+      Util.actionUrl("security", "apikeys", options) + apiKey,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.retrieveGrants = function(apiKey, success, failure, options) {
+    var description = 'Retrieve security grants for ' + apiKey,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.get(
+      Util.actionUrl("security", "apikeys", options) + apiKey + "/grants/",
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.addGrantToKey = function(apiKey, grant, success, failure, options) {
+    var description = 'Add grant '+JSON.stringify(grant)+' to '+apiKey,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.post(
+      Util.actionUrl("security", "apikeys", options) +apiKey+ "/grants/",
+      grant,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.removeGrant = function(apiKey, grantId, success, failure, options) {
+    var description = 'Remove grant '+grantId+' from key ' + apiKey,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.remove(
+      Util.actionUrl("security", "apikeys", options) + apiKey + "/grants/" + grantId,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.createGrant = function(grant, success, failure, options) {
+    var description = 'Create new grant '+JSON.stringify(grant),
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.post(
+      Util.actionUrl("security", "grants", options),
+      grant,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.describeGrant = function(grantId, success, failure, options) {
+    var description = 'Describe grant ' + grantId,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.get(
+      Util.actionUrl("security", "grants", options) + grantId,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.deleteGrant = function(grantId, success, failure, options) {
+    var description = 'Delete grant ' + grantId,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.remove(
+      Util.actionUrl("security", "grants", options) + grantId,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.listGrantChildren = function(grantId, success, failure, options) {
+    var description = 'List children grant ' + grantId,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.get(
+      Util.actionUrl("security", "grants", options) + grantId + "/children/",
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
+  };
+
+  Precog.prototype.createGrantChild = function(grantId, child, success, failure, options) {
+    var description = 'Create child grant '+JSON.stringify(child)+" for "+grantId,
+        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+
+    if(!parameters.apiKey) throw Error("apiKey not specified");
+    http.post(
+      Util.actionUrl("security", "grants", options)+grantId+"/children/",
+      child,
+      Util.createCallbacks(success, failure, description),
+      parameters
+    );
   };
 
 })(Precog);
