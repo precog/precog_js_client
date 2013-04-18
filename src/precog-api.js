@@ -369,28 +369,34 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.deleteGrant = function(grantId, success, failure, options) {
-    var description = 'Delete grant ' + grantId,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.deleteGrant = function(grantId, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.remove(
-      Util.actionUrl("security", "grants", options) + grantId,
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireParam(grantId, 'grantId');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.delete0({
+      url:      self.securityUrl("grants") + "/" + grantId,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
-  Precog.prototype.listGrantChildren = function(grantId, success, failure, options) {
-    var description = 'List children grant ' + grantId,
-        parameters = { apiKey: (options && options.apiKey) || $.Config.apiKey };
+  Precog.prototype.listGrantChildren = function(grantId, success, failure) {
+    var self = this;
 
-    if(!parameters.apiKey) throw Error("apiKey not specified");
-    http.get(
-      Util.actionUrl("security", "grants", options) + grantId + "/children/",
-      Util.createCallbacks(success, failure, description),
-      parameters
-    );
+    Util.requireParam(grantId, 'grantId');
+
+    self.requireConfig('apiKey');
+
+    PrecogHttp.get({
+      url:      self.securityUrl("grants") + "/" + grantId + "/children/",
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.createGrantChild = function(grantId, child, success, failure, options) {
