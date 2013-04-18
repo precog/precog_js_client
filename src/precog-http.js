@@ -16,7 +16,7 @@
 
 function PrecogHttp(options) {
   return PrecogHttp.http(options);
-};
+}
 
 (function(PrecogHttp) {
   var Util = {};
