@@ -104,6 +104,8 @@ var Precog = function(config) {
   };
 
   Precog.prototype.requestResetPassword = function(email, success, failure) {
+    Util.requireParam(email, 'email');
+
     var self = this;
 
     self.lookupAccountId(email, function(accountId) {
@@ -113,10 +115,12 @@ var Precog = function(config) {
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
       });
-    }, failure);
+    }, Util.defFailure(failure));
   };
 
   Precog.prototype.lookupAccountId = function(email, success, failure) {
+    Util.requireParam(email, 'email');
+
     var self = this;
 
     PrecogHttp.get({
@@ -127,13 +131,23 @@ var Precog = function(config) {
     });
   };
 
-  Precog.prototype.describeAccount = function(email, password, accountId, success, failure, options) {
-    http.get(
-      Util.actionUrl("accounts", "accounts",options) + accountId,
-      Util.createCallbacks(success, failure, description),
-      null,
-      { "Authorization" : Util.makeBaseAuth(email, password) }
-    );
+  Precog.prototype.describeAccount = function(email, password, success, failure) {
+    Util.requireParam(email, 'email');
+    Util.requireParam(password, 'password');
+
+    var self = this;
+
+    self.lookupAccountId(email, function(accountId) {
+      PrecogHttp.get({
+        basicAuth: {
+          username: email,
+          password: password
+        },
+        url:      self.accountsUrl("accounts/" + accountId),
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
+      });
+    }, Util.defFailure(failure));
   };
 
 })(Precog);
