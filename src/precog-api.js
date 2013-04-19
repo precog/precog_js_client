@@ -947,7 +947,8 @@ function Precog(config) {
 
           if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
 
-          if (!results.errors || results.errors.length === 0) {
+          // If there are no errors, store the cached execution of the script:
+          if (!results.errors || !results.errors.length) {
             storedEntry.cached = {
               results:   results,
               timestamp: (new Date()).getMilliseconds() / 1000
