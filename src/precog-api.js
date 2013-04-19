@@ -720,12 +720,12 @@ function Precog(config) {
   };
 
   /**
-   * Replaces the specified file. The file must already exist.
+   * Creates the specified file. The file must not already exist.
    *
    * @example
-   * Precog.replaceFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
+   * Precog.createFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
    */
-  Precog.prototype.replaceFile = function(info, success, failure) {
+  Precog.prototype.createFile = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'path');
@@ -738,9 +738,9 @@ function Precog(config) {
     if (targetName === '') Util.error('To replace a file, the file name must be specified');
 
     return self.listChildren(targetDir).then(function(children) {
-      if (Util.acontains(children, targetName)) {
+      if (!Util.acontains(children, targetName)) {
         return self.uploadFile(info);
-      } else Util.error('The file ' + targetName + ' does not exist in the directory ' + targetDir);
+      } else Util.error('The file ' + targetName + ' already exists in the directory ' + targetDir);
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
