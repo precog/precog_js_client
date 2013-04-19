@@ -8,8 +8,8 @@ module.exports = function(grunt) {
         banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
       build: {
-        src: 'src/<%= pkg.name %>.js',
-        dest: 'build/<%= pkg.name %>.min.js'
+        src: 'dist/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.min.js'
       }
     },
     qunit: {
@@ -38,16 +38,17 @@ module.exports = function(grunt) {
     },
     watch: {
       files: ['<%= jshint.files %>'],
-      tasks: ['jshint', 'qunit']
+      tasks: ['jshint', 'rig', 'qunit']
     }
   });
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-rigger');
 
   grunt.registerTask('test', ['jshint', 'qunit']);
 
-  grunt.registerTask('default', ['jshint', 'qunit', 'rig', 'uglify']);
+  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'qunit']);
 };
