@@ -637,4 +637,36 @@ function Precog(config) {
     });
   };
 
+  Precog.prototype.asyncQuery = function(info, success, failure ) {
+    Util.requireField(info, 'query');
+
+    return PrecogHttp.post({
+      url:      Util.analysisUrl("queries"),
+      query:    {
+                  apiKey     : self.config.apiKey,
+                  limit      : info.limit,
+                  basePath   : info.basePath,
+                  skip       : info.skip,
+                  order      : info.order,
+                  sortOn     : info.sortOn,
+                  sortOrder  : info.sortOrder,
+                  timeout    : info.timeout,
+                  prefixPath : info.prefixPath,
+                  format     : info.format
+                },
+      content:  info.query,
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  Precog.prototype.asyncQueryResults = function(info, success, failure) {
+    return PrecogHttp.get({
+      url:      self.analysisUrl("queries") + '/' + info.jobId,
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
 })(Precog);
