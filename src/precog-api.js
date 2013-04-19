@@ -21,6 +21,13 @@ function Precog(config) {
     if (typeof console != 'undefined') console.error(msg);
     throw new Error(msg);
   };
+  Util.amap = function(a, f) {
+    var ap = [];
+    for (var i = 0; i < a.length; i++) {
+      ap.push(f(a[i]));
+    }
+    return ap;
+  };
   Util.requireParam = function(v, name) {
     if (v == null) Util.error('The parameter "' + name + '" may not be null or undefined');
   };
@@ -59,6 +66,10 @@ function Precog(config) {
   Util.unwrapSingleton = function(v) { return v instanceof Array ? v[0] : v; };
   Util.defSuccess = function(success) {
     return Util.composef(success, Util.extractContent);
+  };
+  Util.safeCallback = function(f) {
+    if (f == null) return function(v) { return v; };
+    else return f;
   };
 
   Util.defSuccessSingletonArray = function(success) {
@@ -624,7 +635,8 @@ function Precog(config) {
       return metadata.children;
     };
 
-    return this.retrieveMetadata(path).then(success1, failure).then(success, failure);
+    return this.retrieveMetadata(path).then(success1).then(
+        Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -636,23 +648,21 @@ function Precog(config) {
   Precog.prototype.listDescendants = function(path, success, failure) {
     var listDescendants0 = function(root) {
       this.listChildren(root).then(function(children) {
-        var futures = [];
+        var futures = Util.amap(children, function(child) {
+          var fullPath = root + '/' + child;
 
-        for (var i = 0; i < children.length; i++) {
-          var fullPath = root + '/' + children[i];
-
-          futures.push(listDescendants0(fullPath));
-        }
+          return listDescendants0(fullPath);
+        });
 
         return Future.every(futures).then(function(arrays) {
           var merged = [];
           merged.concat.apply(merged, arrays);
           return merged;
-        }, failure);
-      }, failure);
+        });
+      });
     };
 
-    return listDescendants0(path).then(success, failure);
+    return listDescendants0(path).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   // ************
@@ -767,6 +777,24 @@ function Precog(config) {
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
+  };
+
+  /**
+   * Deletes the specified directory and everything it contains.
+   *
+   * @example
+   * Precog.deleteAll('/website/');
+   */
+  Precog.prototype.deleteAll = function(path, success, failure) {
+    var self = this;
+
+    return this.listDescendants(path).then(function(children0) {
+      var children = children0.concat([path]);
+
+      var futures = Util.amap(children, self.delete0);
+
+      return Future.every(futures);
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   // ****************
