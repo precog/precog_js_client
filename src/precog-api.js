@@ -703,11 +703,9 @@ function Precog(config) {
                     quote:          info.quote,
                     escape:         info.escape
                   },
-        headers:  { 'Content-Type': info.type },
-        success:  Util.defSuccess(success),
-        failure:  Util.defFailure(failure)
+        headers:  { 'Content-Type': info.type }
       });
-    }, Util.defFailure(failure));
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -800,6 +798,8 @@ function Precog(config) {
   // ****************
   // *** ANALYSIS ***
   // ****************
+  Precog.prototype.
+
   Precog.prototype.query = function(info, success, failure) {
     var self = this;
 
