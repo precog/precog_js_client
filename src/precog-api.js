@@ -133,11 +133,12 @@ function Precog(config) {
   };
 
   Precog.prototype.FileTypes = {
-    JSON:        'application/json',
-    JSON_STREAM: 'application/x-json-stream',
-    CSV:         'text/csv',
-    ZIP:         'application/zip',
-    GZIP:        'application/x-gzip'
+    JSON:           'application/json',
+    JSON_STREAM:    'application/x-json-stream',
+    CSV:            'text/csv',
+    ZIP:            'application/zip',
+    GZIP:           'application/x-gzip',
+    QUIRREL_SCRIPT: 'text/x-quirrel-script'
   };
 
   // ****************
@@ -857,33 +858,22 @@ function Precog(config) {
     Util.requireParam(path, 'path');
 
     self.retrieveFile(path).then(function(file) {
-
+      if (file.type === 'text/x-quirrel-script') {
+        return self.execute(file.contents);
+      } else Util.error('The file ' + path + 
+                        ' does not have type text/x-quirrel-script and therefore cannot be executed');
     });
   };
 
-  Precog.prototype.execute = function(script, success, failure) {
+  /**
+   * Executes the specified Quirrel script.
+   *
+   * @example
+   * Precog.execute({query: 'count(//foo)'});
+   */
+  Precog.prototype.execute = function(info, success, failure) {
     var self = this;
 
-    self.requireConfig('apiKey');
-
-    return PrecogHttp.get({
-      url:      self.analysisUrl("fs/" + info.path),
-      query:    {
-                  apiKey: self.config.apiKey, 
-                  q:      script,
-                  limit:  info.limit,
-                  skip:   info.skip,
-                  sortOn: info.sortOn
-                },
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
-    });
-  };
-
-  Precog.prototype.query = function(info, success, failure) {
-    var self = this;
-
-    Util.requireField(info, 'path');
     Util.requireField(info, 'query');
 
     self.requireConfig('apiKey');
