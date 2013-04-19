@@ -798,7 +798,7 @@ function Precog(config) {
   // ****************
   // *** ANALYSIS ***
   // ****************
-  Precog.prototype.
+  // Precog.prototype.
 
   Precog.prototype.query = function(info, success, failure) {
     var self = this;
