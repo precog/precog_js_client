@@ -862,11 +862,11 @@ function Precog(config) {
         return self.execute(file.contents);
       } else Util.error('The file ' + path + 
                         ' does not have type text/x-quirrel-script and therefore cannot be executed');
-    });
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
-   * Executes the specified Quirrel script.
+   * Executes the specified Quirrel query.
    *
    * @example
    * Precog.execute({query: 'count(//foo)'});
