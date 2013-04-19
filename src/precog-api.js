@@ -942,7 +942,11 @@ function Precog(config) {
 
     self.retrieveFile(path).then(function(file) {
       if (file.type === 'text/x-quirrel-script') {
-        return self.execute(file.contents).then(function(results) {
+        var executeRequest = {
+          query: file.contents
+        };
+
+        return self.execute(executeRequest).then(function(results) {
           var storedEntry = localStorage.getItem(path);
 
           if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
