@@ -665,31 +665,11 @@ function Precog(config) {
    * Precog.append({path: '/website/clicks.json', value: clickEvent});
    */
   Precog.prototype.append = function(info, success, failure) {
-    var self = this;
+    info.values = [info.value];
 
-    Util.requireField(info, 'value');
-    Util.requireField(info, 'path');
+    delete info.value;
 
-    self.requireConfig('apiKey');
-
-    var targetDir  = Util.parentPath(info.path);
-    var targetName = Util.lastPathElement(info.path);
-
-    if (targetName === '') Util.error('Data must be appended to a specific file.');
-
-    var fullPath = targetDir + '/' + targetName;
-
-    return PrecogHttp.post({
-      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-      content:  info.value instanceof Array ? [info.value] : info.value,
-      query:    {
-                  apiKey:         self.config.apiKey,
-                  ownerAccountId: info.ownerAccountId
-                },
-      headers:  { 'Content-Type': 'application/json' },
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
-    });
+    return this.appendAll(info, success, failure);
   };
 
   /**
