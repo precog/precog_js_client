@@ -681,13 +681,13 @@ function Precog(config) {
    * file type (which must be a mime-type accepted by the server).
    *
    * @example
-   * Precog.uploadFile({path: '/foo/bar.csv', Precog.FileTypes.CSV, contents: contents});
+   * Precog.uploadFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
    */
   Precog.prototype.uploadFile = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'path');
-    Util.requireField(info, 'format');
+    Util.requireField(info, 'type');
     Util.requireField(info, 'contents');
 
     self.requireConfig('apiKey');
@@ -697,26 +697,51 @@ function Precog(config) {
 
     if (targetName === '') Util.error('A file may only be uploaded to a specific directory');
 
-    var fullPath = targetDir + '/' + targetName;
+    var fullPath = Util.sanitizePath(targetDir + '/' + targetName);
 
-    var handle = function(_) {
-      return PrecogHttp.post({
-        url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-        content:  info.contents,
-        query:    {
-                    apiKey:         self.config.apiKey,
-                    ownerAccountId: info.ownerAccountId,
-                    delimiter:      info.delimiter,
-                    quote:          info.quote,
-                    escape:         info.escape
-                  },
-        headers:  { 'Content-Type': info.type }
-      });
-    };
+    var emulate;
 
-    return self.delete0(fullPath).
-            then(handle)["catch"](handle). // We don't care if the delete failed
-            then(Util.safeCallback(success), Util.safeCallback(failure));
+    switch (info.type) {
+      case Precog.FileTypes.JSON:
+      case Precog.FileTypes.JSON_STREAM:
+      case Precog.FileTypes.CSV:
+      case Precog.FileTypes.ZIP:
+      case Precog.FileTypes.GZIP:
+
+        emulate = false;
+      break;
+
+      default: 
+        emulate = true;
+
+      break;
+    }
+
+    if (emulate) {
+      // Store in local storage for now:
+      localStorage.setItem(fullPath, {type: info.type, contents: info.contents});
+
+      return ToFuture(undefined).then(Util.safeCallback(success), Util.safeCallback(failure));
+    } else {
+      var handle = function(_) {
+        return PrecogHttp.post({
+          url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+          content:  info.contents,
+          query:    {
+                      apiKey:         self.config.apiKey,
+                      ownerAccountId: info.ownerAccountId,
+                      delimiter:      info.delimiter,
+                      quote:          info.quote,
+                      escape:         info.escape
+                    },
+          headers:  { 'Content-Type': info.type }
+        });
+      };
+
+      return self.delete0(fullPath).
+              then(handle)["catch"](handle). // We don't care if the delete failed
+              then(Util.safeCallback(success), Util.safeCallback(failure));
+    }
   };
 
   /**
