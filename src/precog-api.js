@@ -613,6 +613,48 @@ function Precog(config) {
     });
   };
 
+  /**
+   * Retrieves all children of the specified path.
+   *
+   * @example
+   * Precog.listChildren('/foo');
+   */
+  Precog.prototype.listChildren = function(path, success, failure) {
+    var success1 = function(metadata) {
+      return metadata.children;
+    };
+
+    return this.retrieveMetadata(path).then(success1, failure).then(success, failure);
+  };
+
+  /**
+   * Retrieves all descendants of the specified path.
+   *
+   * @example
+   * Precog.listDescendants('/foo');
+   */
+  Precog.prototype.listDescendants = function(path, success, failure) {
+    var listDescendants0 = function(root) {
+      this.listChildren(root).then(function(children) {
+        var futures = [];
+
+        for (var i = 0; i < children.length; i++) {
+          var fullPath = root + '/' + children[i];
+
+          futures.push(listDescendants0(fullPath));
+        }
+
+        return Future.every(futures).then(function(arrays) {
+          var merged = [];
+          merged.concat.apply(merged, arrays);
+          return merged;
+        }, failure);
+      }, failure);
+    };
+
+    return listDescendants0(path).then(success, failure);
+  };
+
   // ************
   // *** DATA ***
   // ************
