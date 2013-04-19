@@ -28,6 +28,12 @@ function Precog(config) {
     }
     return ap;
   };
+  Util.acontains = function(a, v) {
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] == v) return true;
+    }
+    return false;
+  };
   Util.requireParam = function(v, name) {
     if (v == null) Util.error('The parameter "' + name + '" may not be null or undefined');
   };
@@ -708,8 +714,7 @@ function Precog(config) {
     };
 
     return self.delete0(fullPath).
-            then(handle).
-            catch(handle). // We don't care if the delete failed
+            then(handle)["catch"](handle). // We don't care if the delete failed
             then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
@@ -720,6 +725,22 @@ function Precog(config) {
    * Precog.replaceFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
    */
   Precog.prototype.replaceFile = function(info, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'path');
+    Util.requireField(info, 'type');
+    Util.requireFiled(info, 'contents');
+
+    var targetDir  = Util.parentPath(info.path);
+    var targetName = Util.lastPathElement(info.path);
+
+    if (targetName === '') Util.error('To replace a file, the file name must be specified');
+
+    return self.listChildren(targetDir).then(function(children) {
+      if (Util.acontains(children, targetName)) {
+        return self.uploadFile(info);
+      } else Util.error('The file ' + targetName + ' does not exist in the directory ' + targetDir);
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -831,7 +852,13 @@ function Precog(config) {
    * Precog.executeFile('/foo/script.qrl');
    */
   Precog.prototype.executeFile = function(path, success, failure) {
+    var self = this;
 
+    Util.requireParam(path, 'path');
+
+    self.retrieveFile(path).then(function(file) {
+
+    });
   };
 
   Precog.prototype.execute = function(script, success, failure) {
