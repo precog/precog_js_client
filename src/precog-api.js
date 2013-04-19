@@ -667,6 +667,8 @@ function Precog(config) {
   };
 
   Precog.prototype.asyncQuery = function(info, success, failure ) {
+    var self = this;
+    
     Util.requireField(info, 'query');
 
     return PrecogHttp.post({
@@ -690,6 +692,10 @@ function Precog(config) {
   };
 
   Precog.prototype.asyncQueryResults = function(info, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'jobId');
+
     return PrecogHttp.get({
       url:      self.analysisUrl("queries") + '/' + info.jobId,
       query:    {apiKey: self.config.apiKey},
