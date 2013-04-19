@@ -1,3 +1,15 @@
+
+/**
+ * Constructs a new Precog client library.
+ *
+ * @param config.apiKey             The API key of the authorizing account. 
+ *                                  This is not needed to access the accounts 
+ *                                  API methods.
+ *
+ * @param config.analyticsService   The URL to the analytics service. This is 
+ *                                  a required parameter for all API methods.
+ *
+ */
 function Precog(config) {
   this.config = config;
 }
@@ -668,7 +680,7 @@ function Precog(config) {
 
   Precog.prototype.asyncQuery = function(info, success, failure ) {
     var self = this;
-    
+
     Util.requireField(info, 'query');
 
     return PrecogHttp.post({
