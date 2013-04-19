@@ -692,7 +692,7 @@ function Precog(config) {
 
     var fullPath = targetDir + '/' + targetName;
 
-    return self.delete0(fullPath).then(function(_) {
+    var handle = function(_) {
       return PrecogHttp.post({
         url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
         content:  info.contents,
@@ -705,7 +705,30 @@ function Precog(config) {
                   },
         headers:  { 'Content-Type': info.type }
       });
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
+    };
+
+    return self.delete0(fullPath).
+            then(handle).
+            catch(handle). // We don't care if the delete failed
+            then(Util.safeCallback(success), Util.safeCallback(failure));
+  };
+
+  /**
+   * Replaces the specified file. The file must already exist.
+   *
+   * @example
+   * Precog.replaceFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
+   */
+  Precog.prototype.replaceFile = function(info, success, failure) {
+  };
+
+  /**
+   * Retrieves the contents of the specified file.
+   *
+   * @example
+   * Precog.retrieveFile('/foo/bar.qrl');
+   */
+  Precog.prototype.retrieveFile = function(info, success, failure) {
   };
 
   /**
@@ -798,7 +821,9 @@ function Precog(config) {
   // ****************
   // *** ANALYSIS ***
   // ****************
-  // Precog.prototype.
+  Precog.prototype.executeScript = function(info, success, failure) {
+
+  };
 
   Precog.prototype.query = function(info, success, failure) {
     var self = this;
