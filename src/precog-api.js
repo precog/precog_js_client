@@ -801,7 +801,18 @@ function Precog(config) {
       return ToFuture(
         localStorage.getItem(path)
       ).then(Util.safeCallback(success), Util.safeCallback(failure));
-    } else return self.execute('load("' + path + '")', success, failure);
+    } else {
+      return self.execute('load("' + path + '")').then(function(results) {
+        if (results.errors && results.errors.length > 0) {
+          Util.error('Cannot load file due to errors: ' + JSON.stringify(results));
+        } else {
+          return {
+            content: results.data,
+            type:    'application/json'
+          };
+        }
+      }).then(Util.safeCallback(success), Util.safeCallback(failure));
+    }
   };
 
   /**
