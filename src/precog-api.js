@@ -913,14 +913,32 @@ function Precog(config) {
    * Executes the specified file, which must be a Quirrel script.
    *
    * @example
-   * Precog.executeFile('/foo/script.qrl');
+   * Precog.executeFile({path: '/foo/script.qrl'});
    */
-  Precog.prototype.executeFile = function(path0, success, failure) {
+  Precog.prototype.executeFile = function(info, success, failure) {
     var self = this;
 
-    Util.requireParam(path0, 'path');
+    Util.requireField(path, 'path');
 
-    var path = Util.sanitizePath(path0);
+    var path = Util.sanitizePath(info.path);
+
+    // FIXME: EMULATION
+    if (info.maxAge) {
+      // User wants to cache, see if there's a cached version:
+      var storedEntry = localStorage.getItem(path);
+
+      if (storedEntry.cached) {
+        // There's a cached version, see if it's fresh enough:
+        var now = (new Date()).getMilliseconds() / 1000;
+
+        var age = now - cached.timestamp;
+
+        if (age < info.maxAge || info.maxStale && (age < (info.maxAge + info.maxStale))) {
+          return ToFuture(storedEntry.cached.results).
+                   then(Util.safeCallback(success), Util.safeCallback(failure));
+        }
+      }
+    }
 
     self.retrieveFile(path).then(function(file) {
       if (file.type === 'text/x-quirrel-script') {
@@ -930,9 +948,9 @@ function Precog(config) {
           if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
 
           if (!results.errors || results.errors.length === 0) {
-            storedEntry.cachedExecution = {
-              data:      results.data,
-              timestamp: (new DateTime()).getMilliseconds()
+            storedEntry.cached = {
+              results:   results,
+              timestamp: (new Date()).getMilliseconds() / 1000
             };
           }
 
