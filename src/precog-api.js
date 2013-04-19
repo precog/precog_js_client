@@ -585,13 +585,42 @@ function Precog(config) {
 
     Util.requireField(info, 'path');
     Util.requireField(info, 'data');
+    Util.requireField(info, 'type');
 
     self.requireConfig('apiKey');
+
+    switch(info.type.toLowerCase()) {
+    case 'application/x-gzip':
+    case 'gz':
+    case 'gzip':
+      info.type = 'application/x-gzip';
+      break;
+    case 'zip':
+      info.type = 'application/zip';
+      break;
+    case 'application/json':
+    case 'json':
+      info.type = 'application/json';
+      break;
+    case 'text/csv':
+    case 'csv':
+      info.type = 'text/csv';
+      break;
+    default:
+      Util.error("The field 'type' must be in ['json', 'csv', 'zip', 'gzip']");
+    }
 
     return PrecogHttp.post({
       url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + info.path),
       content:  info.data,
-      query:    {apiKey: self.config.apiKey, ownerAccountId: info.ownerAccountId},
+      query:    {
+                  apiKey:         self.config.apiKey,
+                  ownerAccountId: info.ownerAccountId,
+                  delimiter:      info.delimiter,
+                  quote:          info.quote,
+                  escape:         info.escape
+                },
+      headers:  { 'Content-Type': info.type },
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
