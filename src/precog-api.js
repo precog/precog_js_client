@@ -15,15 +15,6 @@ function Precog(config) {
 }
 
 (function(Precog) {
-  Precog.GrantTypes = {
-    Append:   "append",
-    Replace:  "replace",
-    Execute:  "execute",
-    Mount:    "mount",
-    Create:   "create",
-    Explore:  "explore"
-  };
-
   var Util = {};
 
   Util.error = function(msg) {
@@ -34,7 +25,7 @@ function Precog(config) {
     if (v == null) Util.error('The parameter "' + name + '" may not be null or undefined');
   };
   Util.requireField = function(v, name) {
-    if (v[name] == null) Util.error('The field "' + name + '" may not be null or undefined');
+    if (v == null || v[name] == null) Util.error('The field "' + name + '" may not be null or undefined');
   };
   Util.removeTrailingSlash = function(path) {
     if (path == null || path.length === 0) return path;
@@ -42,13 +33,26 @@ function Precog(config) {
     else return path;
   };
   Util.sanitizePath = function(path) {
-    return (path + "/").replace(/[\/]+/g, "/");
+    return path.replace(/[\/]+/g, "/");
   };
   Util.composef = function(f, g) {
     if (f == null || g == null) return undefined;
     else return function(v) {
       return f(g(v));
     };
+  };
+  Util.parentPath = function(v0) {
+    var v = Util.removeTrailingSlash(Util.sanitizePath(v0));
+    var elements = v.split('/');
+    var sliced = elements.slice(0,-1);
+    if (sliced.length <= 1) return '/';
+    return sliced.join('/');
+  };
+  Util.lastPathElement = function(v0) {
+    var v = Util.sanitizePath(v0);
+    var elements = v.split('/');
+    if (elements.length === 0) return undefined;
+    return elements[elements.length - 1];
   };
   Util.extractField = function(field) { return function(v) { return v[field]; }; };
   Util.extractContent = Util.extractField('content');
@@ -97,6 +101,26 @@ function Precog(config) {
   Precog.prototype.requireConfig = function(name) {
     if (this.config == null || this.config[name] == null) 
       Util.error('The configuration field "' + name + '" may not be null or undefined');
+  };
+
+  // *************
+  // *** ENUMS ***
+  // *************
+  Precog.prototype.GrantTypes = {
+    Append:   "append",
+    Replace:  "replace",
+    Execute:  "execute",
+    Mount:    "mount",
+    Create:   "create",
+    Explore:  "explore"
+  };
+
+  Precog.prototype.FileTypes = {
+    JSON:        'application/json',
+    JSON_STREAM: 'application/x-json-stream',
+    CSV:         'text/csv',
+    ZIP:         'application/zip',
+    GZIP:        'application/x-gzip'
   };
 
   // ****************
@@ -592,6 +616,40 @@ function Precog(config) {
   // ************
   // *** DATA ***
   // ************
+  Precog.prototype.uploadFile = function(info, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'dest');
+    Util.requireField(info, 'format');
+    Util.requireField(info, 'contents');
+
+    self.requireConfig('apiKey');
+
+    var targetDir  = Util.parentPath(info.dest);
+    var targetName = Util.lastPathElement(info.dest);
+
+    if (targetName === '') Util.error('A file may only be uploaded to a specific directory');
+
+    var fullPath = Util.sanitizePath(targetDir + '/' + targetName);
+
+    return self.delete0(fullPath).then(function(_) {
+      return PrecogHttp.post({
+        url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+        content:  info.contents,
+        query:    {
+                    apiKey:         self.config.apiKey,
+                    ownerAccountId: info.ownerAccountId,
+                    delimiter:      info.delimiter,
+                    quote:          info.quote,
+                    escape:         info.escape
+                  },
+        headers:  { 'Content-Type': info.type },
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
+      });
+    }, Util.defFailure(failure));
+  };
+
   Precog.prototype.ingest = function(info, success, failure) {
     var self = this;
 
@@ -638,7 +696,7 @@ function Precog(config) {
     });
   };
 
-  Precog.prototype.deletePath = function(path, success, failure) {
+  Precog.prototype.delete0 = function(path, success, failure) {
     var self = this;
 
     Util.requireParam(path, 'path');
