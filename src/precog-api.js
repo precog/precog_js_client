@@ -616,6 +616,14 @@ function Precog(config) {
   // ************
   // *** DATA ***
   // ************
+
+  /**
+   * Uploads the specified contents to the specified path, using the specified
+   * file type (which must be a mime-type accepted by the server).
+   *
+   * @example
+   * Precog.uploadFile({dest: '/foo/bar.csv', Precog.FileTypes.CSV, contents: contents});
+   */
   Precog.prototype.uploadFile = function(info, success, failure) {
     var self = this;
 
