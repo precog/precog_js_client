@@ -664,7 +664,7 @@ function Precog(config) {
    * @example
    * Precog.append({path: '/website/clicks.json', value: clickEvent});
    */
-  Precog.prototype.append = function(value, success, failure) {
+  Precog.prototype.append = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'value');
@@ -681,7 +681,7 @@ function Precog(config) {
 
     return PrecogHttp.post({
       url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-      content:  info.value,
+      content:  info.value instanceof Array ? [info.value] : info.value,
       query:    {
                   apiKey:         self.config.apiKey,
                   ownerAccountId: info.ownerAccountId
@@ -698,7 +698,7 @@ function Precog(config) {
    * @example
    * Precog.append({path: '/website/clicks.json', values: clickEvents});
    */
-  Precog.prototype.append = function(value, success, failure) {
+  Precog.prototype.appendAll = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'value');
@@ -720,12 +720,18 @@ function Precog(config) {
                   apiKey:         self.config.apiKey,
                   ownerAccountId: info.ownerAccountId
                 },
-      headers:  { 'Content-Type': 'application/x-json-stream' },
+      headers:  { 'Content-Type': 'application/json' },
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
   };
 
+  /**
+   * Deletes a specified file in the Precog file system.
+   *
+   * @example
+   * Precog.delete0('/website/clicks.json');
+   */
   Precog.prototype.delete0 = function(path, success, failure) {
     var self = this;
 
