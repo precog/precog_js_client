@@ -739,7 +739,7 @@ function Precog(config) {
     }
 
     if (emulate) {
-      // Store in local storage for now:
+      // FIXME: EMULATION
       localStorage.setItem(fullPath, {type: info.type, contents: info.contents});
 
       return ToFuture(undefined).then(Util.safeCallback(success), Util.safeCallback(failure));
@@ -791,7 +791,17 @@ function Precog(config) {
    * @example
    * Precog.retrieveFile('/foo/bar.qrl');
    */
-  Precog.prototype.retrieveFile = function(info, success, failure) {
+  Precog.prototype.retrieveFile = function(path0, success, failure) {
+    var self = this;
+
+    var path = Util.sanitizePath(path0);
+
+    if (localStorage.getItem(path)) {
+      // FIXME: EMULATION
+      return ToFuture(
+        localStorage.getItem(path)
+      ).then(Util.safeCallback(success), Util.safeCallback(failure));
+    } else return self.execute('load("' + path + '")', success, failure);
   };
 
   /**
