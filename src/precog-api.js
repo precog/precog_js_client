@@ -672,6 +672,27 @@ function Precog(config) {
     return listDescendants0(path).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
+  /**
+   * Determines if the specified file exists.
+   *
+   * @example
+   * Precog.existsFile('/foo/bar.json');
+   */
+  Precog.prototype.existsFile = function(path, success, failure) {
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
+    var targetDir  = Util.parentPath(path);
+    var targetName = Util.lastPathElement(path);
+
+    if (targetName === '') Util.error('To determine if a file exists, the file name must be specified');
+
+    return self.listChildren(targetDir).then(function(children) {
+      return ToFuture(Util.acontains(children, targetName));
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
+  };
+
   // ************
   // *** DATA ***
   // ************
@@ -757,15 +778,10 @@ function Precog(config) {
     Util.requireField(info, 'type');
     Util.requireFiled(info, 'contents');
 
-    var targetDir  = Util.parentPath(info.path);
-    var targetName = Util.lastPathElement(info.path);
-
-    if (targetName === '') Util.error('To replace a file, the file name must be specified');
-
-    return self.listChildren(targetDir).then(function(children) {
-      if (!Util.acontains(children, targetName)) {
+    return self.existsFile(info.path).then(function(fileExists) {
+      if (!fileExists) {
         return self.uploadFile(info);
-      } else Util.error('The file ' + targetName + ' already exists in the directory ' + targetDir);
+      } else Util.error('The file ' + info.path + ' already exists');
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
