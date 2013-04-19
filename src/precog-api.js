@@ -798,9 +798,10 @@ function Precog(config) {
 
     if (localStorage.getItem(path)) {
       // FIXME: EMULATION
-      return ToFuture(
-        localStorage.getItem(path)
-      ).then(Util.safeCallback(success), Util.safeCallback(failure));
+      var result = localStorage.getItem(path);
+
+      return ToFuture({content: result.content, type: result.type}).
+        then(Util.safeCallback(success), Util.safeCallback(failure));
     } else {
       return self.execute('load("' + path + '")').then(function(results) {
         if (results.errors && results.errors.length > 0) {
