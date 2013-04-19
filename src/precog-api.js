@@ -622,23 +622,23 @@ function Precog(config) {
    * file type (which must be a mime-type accepted by the server).
    *
    * @example
-   * Precog.uploadFile({dest: '/foo/bar.csv', Precog.FileTypes.CSV, contents: contents});
+   * Precog.uploadFile({path: '/foo/bar.csv', Precog.FileTypes.CSV, contents: contents});
    */
   Precog.prototype.uploadFile = function(info, success, failure) {
     var self = this;
 
-    Util.requireField(info, 'dest');
+    Util.requireField(info, 'path');
     Util.requireField(info, 'format');
     Util.requireField(info, 'contents');
 
     self.requireConfig('apiKey');
 
-    var targetDir  = Util.parentPath(info.dest);
-    var targetName = Util.lastPathElement(info.dest);
+    var targetDir  = Util.parentPath(info.path);
+    var targetName = Util.lastPathElement(info.path);
 
     if (targetName === '') Util.error('A file may only be uploaded to a specific directory');
 
-    var fullPath = Util.sanitizePath(targetDir + '/' + targetName);
+    var fullPath = targetDir + '/' + targetName;
 
     return self.delete0(fullPath).then(function(_) {
       return PrecogHttp.post({
@@ -656,6 +656,74 @@ function Precog(config) {
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
+  };
+
+  /**
+   * Appends a JSON value to the specified file.
+   *
+   * @example
+   * Precog.append({path: '/website/clicks.json', value: clickEvent});
+   */
+  Precog.prototype.append = function(value, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'value');
+    Util.requireField(info, 'path');
+
+    self.requireConfig('apiKey');
+
+    var targetDir  = Util.parentPath(info.path);
+    var targetName = Util.lastPathElement(info.path);
+
+    if (targetName === '') Util.error('Data must be appended to a specific file.');
+
+    var fullPath = targetDir + '/' + targetName;
+
+    return PrecogHttp.post({
+      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+      content:  info.value,
+      query:    {
+                  apiKey:         self.config.apiKey,
+                  ownerAccountId: info.ownerAccountId
+                },
+      headers:  { 'Content-Type': 'application/json' },
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  /**
+   * Appends a collection of JSON values to the specified file.
+   *
+   * @example
+   * Precog.append({path: '/website/clicks.json', values: clickEvents});
+   */
+  Precog.prototype.append = function(value, success, failure) {
+    var self = this;
+
+    Util.requireField(info, 'value');
+    Util.requireField(info, 'path');
+
+    self.requireConfig('apiKey');
+
+    var targetDir  = Util.parentPath(info.path);
+    var targetName = Util.lastPathElement(info.path);
+
+    if (targetName === '') Util.error('Data must be appended to a specific file.');
+
+    var fullPath = targetDir + '/' + targetName;
+
+    return PrecogHttp.post({
+      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+      content:  info.values,
+      query:    {
+                  apiKey:         self.config.apiKey,
+                  ownerAccountId: info.ownerAccountId
+                },
+      headers:  { 'Content-Type': 'application/x-json-stream' },
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.ingest = function(info, success, failure) {
