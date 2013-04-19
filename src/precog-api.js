@@ -809,6 +809,8 @@ function Precog(config) {
   Precog.prototype.deleteAll = function(path, success, failure) {
     var self = this;
 
+    Util.requireParam(path, 'path');
+
     return this.listDescendants(path).then(function(children0) {
       var children = children0.concat([path]);
 
@@ -821,8 +823,34 @@ function Precog(config) {
   // ****************
   // *** ANALYSIS ***
   // ****************
-  Precog.prototype.executeScript = function(info, success, failure) {
 
+  /**
+   * Executes the specified file, which must be a Quirrel script.
+   *
+   * @example
+   * Precog.executeFile('/foo/script.qrl');
+   */
+  Precog.prototype.executeFile = function(path, success, failure) {
+
+  };
+
+  Precog.prototype.execute = function(script, success, failure) {
+    var self = this;
+
+    self.requireConfig('apiKey');
+
+    return PrecogHttp.get({
+      url:      self.analysisUrl("fs/" + info.path),
+      query:    {
+                  apiKey: self.config.apiKey, 
+                  q:      script,
+                  limit:  info.limit,
+                  skip:   info.skip,
+                  sortOn: info.sortOn
+                },
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
   };
 
   Precog.prototype.query = function(info, success, failure) {
