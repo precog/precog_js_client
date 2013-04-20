@@ -77,20 +77,19 @@ function PrecogHttp(options) {
     return headers;
   };
 
-  Util.info = function() {
-    console.log(arguments);
-    if(typeof console == 'undefined') return;
-    console.info.apply(console, arguments);
+  Util.info = function(v) {
+    if(typeof console !== 'undefined') console.info(v);
+    return v;
   };
 
-  Util.error = function() {
-    if(typeof console == 'undefined') return;
-    console.error.apply(console, arguments);
+  Util.error = function(v) {
+    if(typeof console !== 'undefined') console.error(v);
+    return v;
   };
 
-  Util.debug = function() {
-    if(typeof console == 'undefined') return;
-    console.debug.apply(console, arguments);
+  Util.debug = function(v) {
+    if(typeof console !== 'undefined') console.debug(v);
+    return v;
   };
 
   Util.defopts = function(f) {
