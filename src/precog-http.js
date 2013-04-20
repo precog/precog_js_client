@@ -22,7 +22,7 @@ function PrecogHttp(options) {
   var Util = {};
 
   Util.makeBaseAuth = function(user, password) {
-    return "Basic " + Base64.encode(user + ':' + password);
+    return "Basic " + btoa(user + ':' + password);
   };
 
   Util.addQuery = function(url, query) {
@@ -46,6 +46,53 @@ function PrecogHttp(options) {
     else return url + suffix + queries.join('&') + hash;
   };
 
+  Util.parseResponseHeaders = function(xhr) {
+    var headers = {};
+
+    if (xhr.getAllResponseHeaders) {
+      var responseHeaders = xhr.getAllResponseHeaders().split(/\r?\n/);
+
+      for (var i = 0; i < responseHeaders.length; i++) {
+        if (responseHeaders[i]) {
+          var line = responseHeaders[i];
+
+          var colonIdx = line.indexOf(':');
+
+          var name  = Util.strtrim(line.substr(0, colonIdx));
+          var value = Util.strtrim(line.substr(colonIdx + 1));
+
+          headers[name] = value;
+        }
+      }
+    }
+
+    if (Util.objsize(headers) === 0 && xhr.getResponseHeader) {
+      var contentType = xhr.getResponseHeader('Content-Type');
+
+      if (contentType) {
+        headers["Content-Type"] = contentType;
+      }
+    }
+
+    return headers;
+  };
+
+  Util.info = function() {
+    console.log(arguments);
+    if(typeof console == 'undefined') return;
+    console.info.apply(console, arguments);
+  };
+
+  Util.error = function() {
+    if(typeof console == 'undefined') return;
+    console.error.apply(console, arguments);
+  };
+
+  Util.debug = function() {
+    if(typeof console == 'undefined') return;
+    console.debug.apply(console, arguments);
+  };
+
   Util.defopts = function(f) {
     return function(options) {
       var o = {};
@@ -54,9 +101,9 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success || (typeof console !== 'undefined' && console.info.bind(console)) || function() {};
-      o.failure  = options.failure || (typeof console !== 'undefined' && console.error.bind(console)) || function() {};
-      o.progress = options.progress || (typeof console !== 'undefined' && console.debug.bind(console)) || function() {};
+      o.success  = options.success || Util.info;
+      o.failure  = options.failure || Util.error;
+      o.progress = options.progress || Util.debug;
       o.sync     = options.sync || false;
 
       if (options.basicAuth) {
@@ -126,38 +173,7 @@ function PrecogHttp(options) {
    * })
    */
   PrecogHttp.ajax = Util.defopts(function(options) {
-    var parseResponseHeaders = function(xhr) {
-      var headers = {};
-
-      if (xhr.getAllResponseHeaders) {
-        var responseHeaders = xhr.getAllResponseHeaders().split(/\r?\n/);
-
-        for (var i = 0; i < responseHeaders.length; i++) {
-          if (responseHeaders[i]) {
-            var line = responseHeaders[i];
-
-            var colonIdx = line.indexOf(':');
-
-            var name  = Util.strtrim(line.substr(0, colonIdx));
-            var value = Util.strtrim(line.substr(colonIdx + 1));
-
-            headers[name] = value;
-          }
-        }
-      }
-
-      if (Util.objsize(headers) === 0 && xhr.getResponseHeader) {
-        var contentType = xhr.getResponseHeader('Content-Type');
-
-        if (contentType) {
-          headers["Content-Type"] = contentType;
-        }
-      }
-
-      return headers;
-    };
-
-    var future = new Future(function(resolver) {
+    return new Future(function(resolver) {
       var request = PrecogHttp.createAjax();
 
       request.open(options.method, options.url, options.sync);
@@ -169,7 +185,7 @@ function PrecogHttp(options) {
       });
 
       request.onreadystatechange = function() {
-        var headers = parseResponseHeaders(request);
+        var headers = Util.parseResponseHeaders(request);
 
         if (request.readyState === 4) {
           var content = this.responseText;
@@ -206,12 +222,7 @@ function PrecogHttp(options) {
       } else {
         request.send(null);
       }
-    });
-
-    if(options.success) future.then(options.success, undefined);
-    if(options.failure) future.then(undefined, options.failure);
-
-    return future;
+    }).then(options.success, options.failure);
   });
 
   /**
@@ -285,10 +296,7 @@ function PrecogHttp(options) {
       if (!document.head) document.head = document.getElementsByTagName('head')[0];
 
       document.head.appendChild(script);
-    });
-
-    if(options.success) future.then(options.success, undefined);
-    if(options.failure) future.then(undefined, options.failure);
+    }).then(options.success, options.failure);
 
     return future;
   });
@@ -341,10 +349,7 @@ function PrecogHttp(options) {
       }
 
       request.end();
-    });
-
-    if(options.success) future.then(options.success, undefined);
-    if(options.failure) future.then(undefined, options.failure);
+    }).then(options.success, options.failure);
 
     return future;
   });

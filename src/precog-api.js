@@ -11,6 +11,7 @@
  *
  */
 function Precog(config) {
+  if(!(this instanceof Precog)) return new Precog(config);
   this.config = config;
 }
 
@@ -49,7 +50,8 @@ function Precog(config) {
     return path.replace(/[\/]+/g, "/");
   };
   Util.composef = function(f, g) {
-    if (f == null || g == null) return undefined;
+    if (!f) return g;
+    if (!g) return f;
     else return function(v) {
       return f(g(v));
     };
@@ -57,8 +59,8 @@ function Precog(config) {
   Util.parentPath = function(v0) {
     var v = Util.removeTrailingSlash(Util.sanitizePath(v0));
     var elements = v.split('/');
-    var sliced = elements.slice(0,-1);
-    if (sliced.length <= 1) return '/';
+    var sliced = elements.slice(0, elements.length - 1);
+    if (!sliced.length) return '/';
     return sliced.join('/');
   };
   Util.lastPathElement = function(v0) {
@@ -112,7 +114,7 @@ function Precog(config) {
   };
 
   Precog.prototype.metadataUrl = function(path) {
-    return this.serviceUrl("metadata", 1, path);
+    return this.serviceUrl("meta", 1, path);
   };
 
   Precog.prototype.requireConfig = function(name) {
@@ -123,7 +125,7 @@ function Precog(config) {
   // *************
   // *** ENUMS ***
   // *************
-  Precog.prototype.GrantTypes = {
+  Precog.GrantTypes = {
     Append:   "append",
     Replace:  "replace",
     Execute:  "execute",
@@ -132,7 +134,7 @@ function Precog(config) {
     Explore:  "explore"
   };
 
-  Precog.prototype.FileTypes = {
+  Precog.FileTypes = {
     JSON:           'application/json',
     JSON_STREAM:    'application/x-json-stream',
     CSV:            'text/csv',
@@ -160,7 +162,7 @@ function Precog(config) {
     Util.requireField(account, 'password');
 
     return PrecogHttp.post({
-      url:      self.accountsUrl("accounts"),
+      url:      self.accountsUrl("accounts/"),
       content:  account,
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -179,9 +181,9 @@ function Precog(config) {
 
     Util.requireParam(email, 'email');
 
-    return self.lookupAccountId(email).then(function(accountId) {
+    return self.lookupAccountId(email, function(accountId) {
       return PrecogHttp.post({
-        url:      self.accountsUrl("accounts/" + accountId + "/password/reset"),
+        url:      self.accountsUrl("accounts") + "/" + accountId + "/password/reset",
         content:  {email: email},
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
@@ -202,7 +204,7 @@ function Precog(config) {
 
     return PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
-      content:  {email: email},
+      query:    {email: email},
       success:  Util.defSuccessSingletonArray(success),
       failure:  Util.defFailure(failure)
     });
@@ -220,13 +222,13 @@ function Precog(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email).then(function(accountId) {
+    return self.lookupAccountId(account.email, function(response) {
       return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
         },
-        url:      self.accountsUrl("accounts/" + accountId),
+        url:      self.accountsUrl("accounts/" + response.accountId),
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
       });
@@ -237,7 +239,7 @@ function Precog(config) {
    * Adds a grant to the specified account.
    *
    * @example
-   * Precog.describeAccount(
+   * Precog.addGrantToAccount(
    *   {accountId: '23987123', grantId: '0d43eece-7abb-43bd-8385-e33bac78e145'}
    * );
    */
@@ -249,7 +251,7 @@ function Precog(config) {
 
     return PrecogHttp.post({
       url:      self.accountsUrl("accounts/" + info.accountId + "/grants/"),
-      content:  {grantId: info.grant},
+      content:  {grantId: info.grantId},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
@@ -268,13 +270,13 @@ function Precog(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email).then(function(accountId) {
+    return self.lookupAccountId(account.email, function(response) {
       return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
         },
-        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
         success:  Util.composef(Util.extractField('type'), Util.defSuccess(success)),
         failure:  Util.defFailure(failure)
       });
@@ -294,13 +296,13 @@ function Precog(config) {
     Util.requireField(account, 'password');
     Util.requireField(account, 'plan');
 
-    return self.lookupAccountId(account.email).then(function(accountId) {
+    return self.lookupAccountId(account.email, function(response) {
       return PrecogHttp.put({
         basicAuth: {
           username: account.email,
           password: account.password
         },
-        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
         content:  {type: account.plan},
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
@@ -320,13 +322,13 @@ function Precog(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email).then(function(accountId) {
+    return self.lookupAccountId(account.email, function(response) {
       return PrecogHttp.delete0({
         basicAuth: {
           username: account.email,
           password: account.password
         },
-        url:      self.accountsUrl("accounts/" + accountId + "/plan"),
+        url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
       });
@@ -349,7 +351,7 @@ function Precog(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.securityUrl("apikeys"),
+      url:      self.securityUrl("apikeys/"),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -369,7 +371,7 @@ function Precog(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.post({
-      url:      self.securityUrl("apikeys"),
+      url:      self.securityUrl("apikeys/"),
       content:  grants,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -508,7 +510,7 @@ function Precog(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.post({
-      url:      self.securityUrl("grants"),
+      url:      self.securityUrl("grants/"),
       content:  grant,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
@@ -738,27 +740,29 @@ function Precog(config) {
       break;
     }
 
+    function handle() {
+      return PrecogHttp.post({
+        url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+        content:  info.contents,
+        query:    {
+          apiKey:         self.config.apiKey,
+          ownerAccountId: info.ownerAccountId,
+          delimiter:      info.delimiter,
+          quote:          info.quote,
+          escape:         info.escape
+        },
+        headers:  { 'Content-Type': info.type },
+        success:  Util.defSuccess(success),
+        failure:  Util.defFailure(failure)
+      });
+    }
+
     if (emulate) {
       // FIXME: EMULATION
       localStorage.setItem(fullPath, {type: info.type, contents: info.contents});
 
       return ToFuture(undefined).then(Util.safeCallback(success), Util.safeCallback(failure));
     } else {
-      var handle = function(_) {
-        return PrecogHttp.post({
-          url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-          content:  info.contents,
-          query:    {
-                      apiKey:         self.config.apiKey,
-                      ownerAccountId: info.ownerAccountId,
-                      delimiter:      info.delimiter,
-                      quote:          info.quote,
-                      escape:         info.escape
-                    },
-          headers:  { 'Content-Type': info.type }
-        });
-      };
-
       return self.delete0(fullPath).
               then(handle)["catch"](handle). // We don't care if the delete failed
               then(Util.safeCallback(success), Util.safeCallback(failure));
@@ -852,7 +856,7 @@ function Precog(config) {
     var fullPath = targetDir + '/' + targetName;
 
     return PrecogHttp.post({
-      url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+      url:      self.dataUrl(info.async ? "async" : "sync") + "/fs/" + fullPath,
       content:  info.values,
       query:    {
                   apiKey:         self.config.apiKey,
@@ -878,7 +882,7 @@ function Precog(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.delete0({
-      url:      self.dataUrl("async/fs/" + info.path),
+      url:      self.dataUrl("async/fs/" + path),
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
@@ -997,15 +1001,23 @@ function Precog(config) {
     });
   };
 
+  /**
+   * Submits a Quirrel query and gives a job identifier back. Use
+   * asyncQueryResults to poll for results.
+   *
+   * @example
+   * Precog.asyncQuery({query: '1 + 4'});
+   */
   Precog.prototype.asyncQuery = function(info, success, failure ) {
     var self = this;
 
     Util.requireField(info, 'query');
 
     return PrecogHttp.post({
-      url:      Util.analysisUrl("queries"),
+      url:      self.analysisUrl("queries"),
       query:    {
                   apiKey     : self.config.apiKey,
+                  q          : info.query,
                   limit      : info.limit,
                   basePath   : info.basePath,
                   skip       : info.skip,
@@ -1016,19 +1028,24 @@ function Precog(config) {
                   prefixPath : info.prefixPath,
                   format     : info.format
                 },
-      content:  info.query,
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
     });
   };
 
-  Precog.prototype.asyncQueryResults = function(info, success, failure) {
+  /**
+   * Poll the status of the specified query job.
+   *
+   * @example
+   * Precog.asyncQuery('8837ee1674fb478fb2ebb0b521eaa6ce');
+   */
+  Precog.prototype.asyncQueryResults = function(jobId, success, failure) {
     var self = this;
 
-    Util.requireField(info, 'jobId');
+    Util.requireParam(jobId, 'jobId');
 
     return PrecogHttp.get({
-      url:      self.analysisUrl("queries") + '/' + info.jobId,
+      url:      self.analysisUrl("queries/") + jobId,
       query:    {apiKey: self.config.apiKey},
       success:  Util.defSuccess(success),
       failure:  Util.defFailure(failure)
