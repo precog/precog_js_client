@@ -639,9 +639,19 @@ function Precog(config) {
    * @example
    * Precog.listChildren('/foo');
    */
-  Precog.prototype.listChildren = function(path, success, failure) {
+  Precog.prototype.listChildren = function(path0, success, failure) {
+    Util.requireParam(path0, 'path');
+
+    var path = Util.sanitizePath(path0);
+
+    // FIXME: EMULATION
+    // Add extra children not stored in file system:
+    var dirNode = localStorage.getItem(path) || {};
+
+    var dirChildren = dirNode.children || [];
+
     var success1 = function(metadata) {
-      return metadata.children;
+      return metadata.children.concat(dirChildren); // END
     };
 
     return this.retrieveMetadata(path).then(success1).then(Util.safeCallback(success), Util.safeCallback(failure));
@@ -741,9 +751,29 @@ function Precog(config) {
 
     if (emulate) {
       // FIXME: EMULATION
-      localStorage.setItem(fullPath, {type: info.type, contents: info.contents});
+      var parentDirNode = localStorage.getItem(targetDir);
+      if (parentDirNode == null) parentDirNode = {};
 
-      return ToFuture(undefined).then(Util.safeCallback(success), Util.safeCallback(failure));
+      children = parentDirNode.children || [];
+
+      parentDirNode.children = children;
+
+      children.push(targetName);
+
+      // Keep track of children inside this node:
+      localStorage.setItem(targetDir, parentDirNode);
+
+      // Keep track of the contents of this file:
+      var fileNode = localStorage.getItem(fullPath) || {};
+
+      fileNode.type     = info.type;
+      fileNode.contents = info.contents;
+      fileNode.version  = fileNode.version ? fileNode.version + 1 : 1;
+      fileNode.lastModified = new Date().getMilliseconds();
+
+      localStorage.setItem(fullPath, fileNode);
+
+      return ToFuture({versions:{head: fileNode.version}}).then(Util.safeCallback(success), Util.safeCallback(failure)); // END
     } else {
       return new Future(function(resolver) {
         self.delete0(fullPath).done(function() {
@@ -800,7 +830,7 @@ function Precog(config) {
       var result = localStorage.getItem(path);
 
       return ToFuture({content: result.content, type: result.type}).
-        then(Util.safeCallback(success), Util.safeCallback(failure));
+        then(Util.safeCallback(success), Util.safeCallback(failure)); // END
     } else {
       return self.execute('load("' + path + '")').then(function(results) {
         if (results.errors && results.errors.length > 0) {
@@ -869,12 +899,23 @@ function Precog(config) {
    * @example
    * Precog.delete0('/website/clicks.json');
    */
-  Precog.prototype.delete0 = function(path, success, failure) {
+  Precog.prototype.delete0 = function(path0, success, failure) {
     var self = this;
 
-    Util.requireParam(path, 'path');
+    Util.requireParam(path0, 'path');
 
     self.requireConfig('apiKey');
+
+    var path = Util.sanitizePath(path0);
+
+    // FIXME: EMULATION
+    // Delete files stored locally:
+    var pathNode = (localStorage.getItem(path) || {});
+
+    pathNode.children = [];
+
+    localStorage.setItem(path, pathNode);
+    // END
 
     return PrecogHttp.delete0({
       url:      self.dataUrl("async/fs/" + path),
@@ -938,6 +979,7 @@ function Precog(config) {
         }
       }
     }
+    // END
 
     self.retrieveFile(path).then(function(file) {
       if (file.type === 'text/x-quirrel-script') {
