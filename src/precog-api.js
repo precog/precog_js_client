@@ -46,9 +46,6 @@ function Precog(config) {
     else if (path.substr(path.length - 1) == "/") return path.substr(0, path.length - 1);
     else return path;
   };
-  Util.sanitizePath = function(path) {
-    return path.replace(/[\/]+/g, "/");
-  };
   Util.composef = function(f, g) {
     if (!f) return g;
     if (!g) return f;
@@ -57,14 +54,13 @@ function Precog(config) {
     };
   };
   Util.parentPath = function(v0) {
-    var v = Util.removeTrailingSlash(Util.sanitizePath(v0));
+    var v = Util.removeTrailingSlash(v0);
     var elements = v.split('/');
     var sliced = elements.slice(0, elements.length - 1);
     if (!sliced.length) return '/';
     return sliced.join('/');
   };
-  Util.lastPathElement = function(v0) {
-    var v = Util.sanitizePath(v0);
+  Util.lastPathElement = function(v) {
     var elements = v.split('/');
     if (elements.length === 0) return undefined;
     return elements[elements.length - 1];
@@ -94,7 +90,7 @@ function Precog(config) {
     var fullpathDirty = this.config.analyticsService + "/" + 
                         serviceName + "/v" + serviceVersion + "/" + (path || '');
 
-    return Util.sanitizePath(fullpathDirty);
+    return fullpathDirty;
   };
 
   Precog.prototype.accountsUrl = function(path) {
@@ -277,7 +273,7 @@ function Precog(config) {
           password: account.password
         },
         url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
-        success:  Util.composef(Util.extractField('type'), Util.defSuccess(success)),
+        success:  Util.composef(success, Util.composef(Util.extractField('type'), Util.extractContent)),
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
@@ -329,7 +325,7 @@ function Precog(config) {
           password: account.password
         },
         url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
-        success:  Util.defSuccess(success),
+        success:  Util.composef(success, Util.composef(Util.extractField('type'), Util.extractContent)),
         failure:  Util.defFailure(failure)
       });
     }, Util.defFailure(failure));
@@ -639,20 +635,20 @@ function Precog(config) {
    * @example
    * Precog.listChildren('/foo');
    */
-  Precog.prototype.listChildren = function(path0, success, failure) {
-    Util.requireParam(path0, 'path');
+  Precog.prototype.listChildren = function(path, success, failure) {
+    Util.requireParam(path, 'path');
 
-    var path = Util.sanitizePath(path0);
-
-    // FIXME: EMULATION
-    // Add extra children not stored in file system:
-    var dirNode = localStorage.getItem(path) || {};
+    var dirNode = {};
+    if(typeof localStorage != 'undefined') {
+      // FIXME: EMULATION
+      // Add extra children not stored in file system:
+      dirNode = localStorage.getItem(path) || {};
+    }
 
     var dirChildren = dirNode.children || [];
-
-    var success1 = function(metadata) {
+    function success1(metadata) {
       return metadata.children.concat(dirChildren); // END
-    };
+    }
 
     return this.retrieveMetadata(path).then(success1).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
@@ -729,7 +725,7 @@ function Precog(config) {
 
     if (targetName === '') Util.error('A file may only be uploaded to a specific directory');
 
-    var fullPath = Util.sanitizePath(targetDir + '/' + targetName);
+    var fullPath = targetDir + '/' + targetName;
 
     var emulate;
 
@@ -824,10 +820,8 @@ function Precog(config) {
    * @example
    * Precog.retrieveFile('/foo/bar.qrl');
    */
-  Precog.prototype.retrieveFile = function(path0, success, failure) {
+  Precog.prototype.retrieveFile = function(path, success, failure) {
     var self = this;
-
-    var path = Util.sanitizePath(path0);
 
     if (localStorage.getItem(path)) {
       // FIXME: EMULATION
@@ -903,23 +897,23 @@ function Precog(config) {
    * @example
    * Precog.delete0('/website/clicks.json');
    */
-  Precog.prototype.delete0 = function(path0, success, failure) {
+  Precog.prototype.delete0 = function(path, success, failure) {
     var self = this;
 
-    Util.requireParam(path0, 'path');
+    Util.requireParam(path, 'path');
 
     self.requireConfig('apiKey');
 
-    var path = Util.sanitizePath(path0);
+    if(typeof localStorage != 'undefined') {
+      // FIXME: EMULATION
+      // Delete files stored locally:
+      var pathNode = (localStorage.getItem(path) || {});
 
-    // FIXME: EMULATION
-    // Delete files stored locally:
-    var pathNode = (localStorage.getItem(path) || {});
+      pathNode.children = [];
 
-    pathNode.children = [];
-
-    localStorage.setItem(path, pathNode);
-    // END
+      localStorage.setItem(path, pathNode);
+      // END
+    }
 
     return PrecogHttp.delete0({
       url:      self.dataUrl("async/fs/" + path),
@@ -964,12 +958,10 @@ function Precog(config) {
 
     Util.requireField(path, 'path');
 
-    var path = Util.sanitizePath(info.path);
-
     // FIXME: EMULATION
     if (info.maxAge) {
       // User wants to cache, see if there's a cached version:
-      var storedEntry = localStorage.getItem(path);
+      var storedEntry = localStorage.getItem(info.path);
 
       if (storedEntry.cached) {
         // There's a cached version, see if it's fresh enough:
@@ -985,14 +977,14 @@ function Precog(config) {
     }
     // END
 
-    self.retrieveFile(path).then(function(file) {
+    self.retrieveFile(info.path).then(function(file) {
       if (file.type === 'text/x-quirrel-script') {
         var executeRequest = {
           query: file.contents
         };
 
         return self.execute(executeRequest).then(function(results) {
-          var storedEntry = localStorage.getItem(path);
+          var storedEntry = localStorage.getItem(info.path);
 
           if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
 
@@ -1004,11 +996,11 @@ function Precog(config) {
             };
           }
 
-          localStorage.setItem(path, storedEntry);
+          localStorage.setItem(info.path, storedEntry);
 
           return results;
         });
-      } else Util.error('The file ' + path + 
+      } else Util.error('The file ' + info.path +
                         ' does not have type text/x-quirrel-script and therefore cannot be executed');
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
