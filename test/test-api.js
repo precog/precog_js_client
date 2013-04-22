@@ -17,14 +17,14 @@ QUnit.asyncTest("describe account", 1, function(test) {
   });
 });
 
-/*
-asyncTest("current plan", 1, function() {
+
+QUnit.asyncTest("current plan", 1, function(test) {
   anonApi.currentPlan(user, function(plan) {
-    equal(plan.type, 'Free', 'Created plan should be Free');
-    start();
+    test.equal(plan.type, 'Free', 'Created plan should be Free');
   });
 });
 
+/*
 asyncTest("change plan", 1, function() {
   anonApi.changePlan({email: user.email, password: user.password, plan: 'bronze'}, function(response) {
     ok(true, 'Change plan should return non-error HTTP code');
