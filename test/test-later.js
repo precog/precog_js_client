@@ -62,6 +62,8 @@ var QUnit = (function(QUnit, T) {
   Test.prototype.runQUnit = function() {
     var self = this;
 
+    console.debug('Running all QUnit tests for "' + self.name + '"');
+
     QUnit.asyncTest(self.name, self.deferred.length, function() {
       QUnit.start();
 
