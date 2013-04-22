@@ -26,11 +26,8 @@ var QUnit = (function(QUnit, T) {
       var futureOfArray = Future.every.apply(null, args);
 
       return futureOfArray.then(function(array) {
-        console.log('Future delivered with ' + array);
-
         return unlifted.apply(self, array);
       })["catch"](function(reason) { 
-        console.error('Future failed with ' + reason);
         return self.catcher(reason);
       });      
     };
