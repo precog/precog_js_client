@@ -103,7 +103,8 @@ asyncTest("list API key grants", 2, function() {
 
 asyncTest("upload file", 6, function() {
   account$.then(function(account) {
-    var uploadPath = '/' + account.accountId + '/test';
+    var uploadPathRoot = '/' + account.accountId;
+    var uploadPath = uploadPathRoot + '/' + 'test';
 
     api$.then(function(api) {
       return api.uploadFile({
@@ -118,17 +119,29 @@ asyncTest("upload file", 6, function() {
         equal(report.ingested, 2, 'Should have ingested two items');
         notEqual(report.ingestId, undefined, 'Should have an ingest ID');
 
-        asyncTest('metadata', 3, function() {
-          api.retrieveMetadata(uploadPath, function(metadata) {
-            notEqual(metadata.size, undefined, 'Metadata must have size');
-            notEqual(metadata.children, undefined, 'Metadata must have children');
-            notEqual(metadata.structure, undefined, 'Metadata must have structure');
+        asyncTest('listing children', 2, function() {
+          api.listChildren(uploadPathRoot, function(children) {
+            equal(children.length, 1, 'Children must have size');
+            equal(children[0], 'test/', 'Child must equal uploaded file');
 
-            asyncTest("delete path", 1, function() {
-              api.delete0(uploadPath, function(deleted) {
-                ok(true, 'Delete path should return non-error HTTP code');
-                start();
+            asyncTest('metadata', 3, function() {
+              api.retrieveMetadata(uploadPath, function(metadata) {
+                console.log(metadata);
+                notEqual(metadata.size, undefined, 'Metadata must have size');
+                notEqual(metadata.children, undefined, 'Metadata must have children');
+                notEqual(metadata.structure, undefined, 'Metadata must have structure');
+
+                asyncTest("delete path", 1, function() {
+                  api.delete0(uploadPath, function(deleted) {
+                    ok(true, 'Delete path should return non-error HTTP code');
+                    start();
+                  });
+                });
+
+                //start();
               });
+
+              start();
             });
 
             start();

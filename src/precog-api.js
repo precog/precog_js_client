@@ -644,8 +644,7 @@ function Precog(config) {
       return metadata.children;
     };
 
-    return this.retrieveMetadata(path).then(success1).then(
-        Util.safeCallback(success), Util.safeCallback(failure));
+    return this.retrieveMetadata(path).then(success1).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -975,7 +974,7 @@ function Precog(config) {
   /**
    * Executes the specified Quirrel query.
    *
-   * @return {"data": , "errors": , "warnings": }
+   * @return {"data": ..., "errors": ..., "warnings": ...}
    *
    * @example
    * Precog.execute({query: 'count(//foo)'});
