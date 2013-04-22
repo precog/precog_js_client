@@ -23,7 +23,7 @@ var QUnit = (function(QUnit, T) {
 
       console.log(args);
 
-      var futureOfArray = Future.every(args);
+      var futureOfArray = Future.every.apply(null, args);
 
       return futureOfArray.then(function(array) {
         console.log('Future delivered with ' + array);
@@ -126,7 +126,7 @@ var QUnit = (function(QUnit, T) {
 
   Test.prototype.equal = lift(function(actual, expected, message) { 
     console.debug('Checking to see if ' + expected + ' is equal to ' + actual);
-    
+
     this.markTest(expected == actual, function(){return QUnit.equal(actual, expected, message);});
   });
 
