@@ -773,6 +773,10 @@ function Precog(config) {
 
       localStorage.setItem(fullPath, fileNode);
 
+      // TODO: If the file is a script, immediately execute and store the results
+      //       in the REAL file system as a data file by the same name, so Quirrel
+      //       load() function can access the data.
+
       return ToFuture({versions:{head: fileNode.version}}).then(Util.safeCallback(success), Util.safeCallback(failure)); // END
     } else {
       return new Future(function(resolver) {
