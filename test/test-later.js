@@ -1,5 +1,5 @@
 
-var QUnit = (function(QUnit, T) {
+var AUnit = (function(QUnit, T) {
   T.MaxRetryCount = T.MaxRetryCount || 10;
   T.RetryDelay    = T.RetryDelay || 100;
 
@@ -39,6 +39,7 @@ var QUnit = (function(QUnit, T) {
     this.succs    = 0;
     this.tries    = tries || 1;
     this.deferred = [];
+    this.children = [];
   };
 
   Test.prototype.start = function() {
@@ -47,6 +48,10 @@ var QUnit = (function(QUnit, T) {
     console.debug('Starting test "' + this.name + '" for attempt #' + this.count);
 
     return this.body(this);
+  };
+
+  Test.prototype.asyncTest = function(testName, testCount, testBody) {
+    this.children.push(new Test(testName, testCount, testBody));
   };
 
   Test.prototype.catcher = function(reason) {
@@ -74,6 +79,15 @@ var QUnit = (function(QUnit, T) {
 
       QUnit.stop();
     });
+
+    // Start all the sub tests:
+    if (this.fails === 0) {
+      console.log('Starting all sub tests of "' + this.name + '"');
+
+      for (var i = 0; i < this.children.length; i++) {
+        this.children[i].start();
+      }
+    }
   };
 
   Test.prototype.markTest = function(succeeded, qtest) {
@@ -112,6 +126,8 @@ var QUnit = (function(QUnit, T) {
       // Start the next test after waiting a while:
       setTimeout(function(){next.start();}, T.RetryDelay);
     } else {
+      console.error('No more retries for test "' + self.name + '", running QUnit');
+
       // All tests have failed, and no more retries!
       self.runQUnit();
     }
@@ -188,4 +204,4 @@ var QUnit = (function(QUnit, T) {
   return T;
 })(QUnit, {});
 
-if (typeof window !== 'undefined') window.asyncTest = QUnit.asyncTest;
+delete window.asyncTest;
