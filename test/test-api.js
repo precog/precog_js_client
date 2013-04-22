@@ -24,22 +24,20 @@ asyncTest("current plan", 1, function(test) {
   });
 });
 
-/*
-asyncTest("change plan", 1, function() {
-  anonApi.changePlan({email: user.email, password: user.password, plan: 'bronze'}, function(response) {
-    ok(true, 'Change plan should return non-error HTTP code');
 
-    asyncTest("delete plan", 1, function() {
+asyncTest("change plan", 1, function(test) {
+  anonApi.changePlan({email: user.email, password: user.password, plan: 'bronze'}, function(response) {
+    test.ok(true, 'Change plan should return non-error HTTP code');
+
+    asyncTest("delete plan", 1, function(test) {
       anonApi.deletePlan(user, function(plan) {
-        equal(plan.type, 'bronze', 'Deleted plan should be bronze');
-        start();
+        test.equal(plan.type, 'bronze', 'Deleted plan should be bronze');
       });
     });
-
-    start();
   });
 });
 
+/*
 var api$ = account$.then(function(account) {
   return new Precog.api({
     analyticsService: analyticsService,
