@@ -12,6 +12,15 @@ module.exports = function(grunt) {
         dest: 'dist/<%= pkg.name %>.min.js'
       }
     },
+    'node-qunit': {
+      all: {
+        code: {
+          path: 'dist/precog-js-client.js',
+          namespace: 'Precog'
+        },
+        tests: 'test/test-api.js'
+      }
+    },
     qunit: {
       files: ['test/**/*.html']
     },
@@ -46,9 +55,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-node-qunit');
   grunt.loadNpmTasks('grunt-rigger');
 
-  grunt.registerTask('test', ['jshint', 'qunit']);
+  grunt.registerTask('test', ['jshint', 'rig', 'node-qunit', 'qunit']);
 
   grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'qunit']);
 };

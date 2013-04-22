@@ -22,7 +22,7 @@ function PrecogHttp(options) {
   var Util = {};
 
   Util.makeBaseAuth = function(user, password) {
-    return "Basic " + btoa(user + ':' + password);
+    return "Basic " + (typeof btoa != 'undefined' ? btoa : exports.btoa)(user + ':' + password);
   };
 
   Util.addQuery = function(url, query) {
@@ -314,8 +314,8 @@ function PrecogHttp(options) {
    * })
    */
   PrecogHttp.nodejs = Util.defopts(function(options) {
-    var reqOptions = require('url').parse(options.path);
-    var http = require(reqOptions.protocol == 'https://' ? 'https' : 'http');
+    var reqOptions = require('url').parse(options.url);
+    var http = require(reqOptions.protocol == 'https:' ? 'https' : 'http');
 
     reqOptions.method = options.method;
     reqOptions.headers = options.headers;
@@ -333,10 +333,10 @@ function PrecogHttp(options) {
           if (response.headers['Content-Length'])
             options.progress({loaded : data.length, total : response.headers['Content-Length'] });
         });
-        response.on('close', function() {
+        response.on('end', function() {
           Util.responseCallback({
             headers:    response.headers,
-            content:    data,
+            content:    data ? (response.headers['content-type'] == 'application/json' ? JSON.parse(data) : data) : undefined,
             status:     response.statusCode,
             statusText: 'statusText not available from nodejs http module'
           }, resolver.accept, resolver.reject);
@@ -344,7 +344,7 @@ function PrecogHttp(options) {
       });
 
       if (options.content) {
-        request.write(options.headers['Content-Type'] ? options.content : JSON.stringify(options.content));
+        request.write(options.headers['Content-Type'] && typeof options.content != 'string' ? JSON.stringify(options.content) : options.content);
       }
 
       request.end();

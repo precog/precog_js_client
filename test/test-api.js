@@ -20,7 +20,7 @@ AUnit.asyncTest("describe account", 1, function(test) {
 
 AUnit.asyncTest("current plan", 1, function(test) {
   anonApi.currentPlan(user, function(plan) {
-    test.equal(plan.type, 'Free', 'Created plan should be Free');
+    test.equal(plan, 'Free', 'Created plan should be Free');
   });
 });
 
@@ -31,7 +31,7 @@ AUnit.asyncTest("change plan", 1, function(test) {
 
     test.asyncTest("delete plan", 1, function(test) {
       anonApi.deletePlan(user, function(plan) {
-        test.equal(plan.type, 'bronze', 'Deleted plan should be bronze');
+        test.equal(plan, 'bronze', 'Deleted plan should be bronze');
       });
     });
   });
@@ -117,7 +117,6 @@ AUnit.asyncTest("upload file", 6, function(test) {
 
             test.asyncTest('metadata', 3, function(test) {
               api.retrieveMetadata(uploadPath, function(metadata) {
-                console.log(metadata);
                 test.notEqual(metadata.size, undefined, 'Metadata must have size');
                 test.notEqual(metadata.children, undefined, 'Metadata must have children');
                 test.notEqual(metadata.structure, undefined, 'Metadata must have structure');
