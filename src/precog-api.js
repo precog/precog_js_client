@@ -690,7 +690,7 @@ function Precog(config) {
     if (targetName === '') Util.error('To determine if a file exists, the file name must be specified');
 
     return self.listChildren(targetDir).then(function(children) {
-      return ToFuture(Util.acontains(children, targetName));
+      return Util.acontains(children, targetName);
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
