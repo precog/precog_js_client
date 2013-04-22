@@ -37,7 +37,7 @@ asyncTest("change plan", 1, function(test) {
   });
 });
 
-/*
+
 var api$ = account$.then(function(account) {
   return new Precog.api({
     analyticsService: analyticsService,
@@ -45,7 +45,7 @@ var api$ = account$.then(function(account) {
   });
 });
 
-asyncTest("decribe API key", 1, function() {
+asyncTest("decribe API key", 1, function(test) {
   var description$ = account$.then(function(account) {
     return api$.then(function(api) {
       return api.describeApiKey(account.apiKey);
@@ -53,53 +53,46 @@ asyncTest("decribe API key", 1, function() {
   });
 
   Future.every(description$, account$).then(function(results) {
-    equal(results[0].apiKey, results[1].apiKey, 'Returned API key should match account');
-    start();
+    test.equal(results[0].apiKey, results[1].apiKey, 'Returned API key should match account');
   });
 });
 
-asyncTest("create API key", 2, function() {
+asyncTest("create API key", 2, function(test) {
   api$.then(function(api) {
     api.createApiKey({
       grants: []
     }).then(function(created) {
-      deepEqual(created.grants, [], 'Grants must be empty');
-      notEqual(created.apiKey, undefined, 'apiKey must be defined');
+      test.deepEqual(created.grants, [], 'Grants must be empty');
+      test.notEqual(created.apiKey, undefined, 'apiKey must be defined');
 
-      asyncTest("list API keys", 2, function() {
+      asyncTest("list API keys", 2, function(test) {
         api.listApiKeys(function(list) {
-          equal(list.length, 1, 'One API key must have been created');
-          equal(created.apiKey, list[0].apiKey, 'Listed key must be API key that was just created');
+          test.equal(list.length, 1, 'One API key must have been created');
+          test.equal(created.apiKey, list[0].apiKey, 'Listed key must be API key that was just created');
 
-          asyncTest("delete API key", 1, function() {
+          asyncTest("delete API key", 1, function(test) {
             api.deleteApiKey(created.apiKey).then(function(result) {
-              ok(true, 'Delete API key should return non-error HTTP code');
-              start();
+              test.ok(true, 'Delete API key should return non-error HTTP code');
             });
           });
-
-          start();
         });
       });
-
-      start();
     });
   });
 });
 
-asyncTest("list API key grants", 2, function() {
+asyncTest("list API key grants", 2, function(test) {
   account$.then(function(account) {
     api$.then(function(api) {
       return api.retrieveApiKeyGrants(account.apiKey);
     }).then(function(grants) {
-      equal(grants.length, 1, 'Must be one grant');
-      notEqual(grants[0].grantId, undefined, 'grantId must be defined');
-      start();
+      test.equal(grants.length, 1, 'Must be one grant');
+      test.notEqual(grants[0].grantId, undefined, 'grantId must be defined');
     });
   });
 });
 
-asyncTest("upload file", 6, function() {
+asyncTest("upload file", 6, function(test) {
   account$.then(function(account) {
     var uploadPathRoot = '/' + account.accountId;
     var uploadPath = uploadPathRoot + '/' + 'test';
@@ -110,85 +103,71 @@ asyncTest("upload file", 6, function() {
         contents: '{"name": "John", "email": "john@precog.com"}\n{"name": "Brian", "email": "brian@precog.com"}',
         type: 'application/json'
       }, function(report) {
-        deepEqual(report.errors, [], 'No errors should be returned');
-        equal(report.failed, 0, 'None should fail');
-        equal(report.skipped, 0, 'None should be skipped');
-        equal(report.total, 2, 'Should have uploaded two items');
-        equal(report.ingested, 2, 'Should have ingested two items');
-        notEqual(report.ingestId, undefined, 'Should have an ingest ID');
+        test.deepEqual(report.errors, [], 'No errors should be returned');
+        test.equal(report.failed, 0, 'None should fail');
+        test.equal(report.skipped, 0, 'None should be skipped');
+        test.equal(report.total, 2, 'Should have uploaded two items');
+        test.equal(report.ingested, 2, 'Should have ingested two items');
+        test.notEqual(report.ingestId, undefined, 'Should have an ingest ID');
 
-        asyncTest('listing children', 2, function() {
+        asyncTest('listing children', 2, function(test) {
           api.listChildren(uploadPathRoot, function(children) {
-            equal(children.length, 1, 'Children must have size');
-            equal(children[0], 'test/', 'Child must equal uploaded file');
+            test.equal(children.length, 1, 'Children must have size');
+            test.equal(children[0], 'test/', 'Child must equal uploaded file');
 
-            asyncTest('metadata', 3, function() {
+            asyncTest('metadata', 3, function(test) {
               api.retrieveMetadata(uploadPath, function(metadata) {
                 console.log(metadata);
-                notEqual(metadata.size, undefined, 'Metadata must have size');
-                notEqual(metadata.children, undefined, 'Metadata must have children');
-                notEqual(metadata.structure, undefined, 'Metadata must have structure');
+                test.notEqual(metadata.size, undefined, 'Metadata must have size');
+                test.notEqual(metadata.children, undefined, 'Metadata must have children');
+                test.notEqual(metadata.structure, undefined, 'Metadata must have structure');
 
-                asyncTest("delete path", 1, function() {
+                asyncTest("delete path", 1, function(test) {
                   api.delete0(uploadPath, function(deleted) {
-                    ok(true, 'Delete path should return non-error HTTP code');
-                    start();
+                    test.ok(true, 'Delete path should return non-error HTTP code');
                   });
                 });
-
-                //start();
               });
-
-              start();
             });
-
-            start();
           });
         });
-
-        start();
       });
     });
   });
 });
 
-asyncTest("execute simple", 1, function() {
+asyncTest("execute simple", 1, function(test) {
   api$.then(function(api) {
     return api.execute({
       path: "",
       query: "1 + 2"
     });
   }).then(function(results) {
-    deepEqual(results, [3], '1 + 2 should return 3');
-    start();
+    test.deepEqual(results, [3], '1 + 2 should return 3');
   });
 });
 
-asyncTest("query async", 1, function() {
+asyncTest("query async", 1, function(test) {
   account$.then(function(account) {
     api$.then(function(api) {
       api.asyncQuery({
         query: "1 + 2"
       }, function(query) {
-        notEqual(query.jobId, undefined, 'jobId must be defined');
+        test.notEqual(query.jobId, undefined, 'jobId must be defined');
 
-        asyncTest("async results", 3, function() {
+        asyncTest("async results", 3, function(test) {
           api.asyncQueryResults(query.jobId, function(results) {
-            equal(results.errors.length, 0, 'Errors must be empty');
-            equal(results.warnings.length, 0, 'Warnings must be empty');
-            deepEqual(results.data, [3], 'Data must only contain three');
-
-            start();
+            test.equal(results.errors.length, 0, 'Errors must be empty');
+            test.equal(results.warnings.length, 0, 'Warnings must be empty');
+            test.deepEqual(results.data, [3], 'Data must only contain three');
           });
         });
-
-        start();
       });
     });
   });
 });
 
-asyncTest('create grant', function() {
+asyncTest('create grant', 1, function(test) {
   account$.then(function(account) {
     var grantName = 'testgrant';
     var childGrantName = 'testchildgrant';
@@ -203,16 +182,16 @@ asyncTest('create grant', function() {
           ownerAccountIds: [account.accountId]
         }]
       }, function(grant) {
-        equal(grant.name, grantName, 'Returned grant should have correct name');
+        test.equal(grant.name, grantName, 'Returned grant should have correct name');
 
-        asyncTest('add grant to API key', 1, function() {
+        asyncTest('add grant to API key', 1, function(test) {
           api.addGrantToApiKey({
             grant: grant,
             apiKey: account.apiKey
           }, function(added) {
-            ok(true, 'Adding grant to API key must return non-error HTTP code');
+            test.ok(true, 'Adding grant to API key must return non-error HTTP code');
 
-            asyncTest('create grant child', 1, function() {
+            asyncTest('create grant child', 1, function(test) {
               api.createGrantChild({
                 parentGrantId: grant.grantId,
                 childGrant: {
@@ -225,63 +204,48 @@ asyncTest('create grant', function() {
                   }]
                 }
               }, function(childGrant) {
-                notEqual(childGrant.grantId, undefined, 'grantId must be defined');
+                test.notEqual(childGrant.grantId, undefined, 'grantId must be defined');
 
-                asyncTest('list grant children', function() {
+                asyncTest('list grant children', 2, function(test) {
                   api.listGrantChildren(grant.grantId, function(children) {
-                    equal(children.length, 1, 'Grant must have one child');
-                    equal(children[0].grantId, childGrant.grantId, 'Listed child grantId must be created child grantId');
+                    test.equal(children.length, 1, 'Grant must have one child');
+                    test.equal(children[0].grantId, childGrant.grantId, 'Listed child grantId must be created child grantId');
 
-                    asyncTest('remove grant from API key', 1, function() {
+                    asyncTest('remove grant from API key', 1, function(test) {
                       api.removeGrantFromApiKey({
                         grantId: grant.grantId,
                         apiKey: account.apiKey
                       }, function(removed) {
-                        ok(true, 'Remove grant from API key must return non-error HTTP code');
+                        test.ok(true, 'Remove grant from API key must return non-error HTTP code');
 
-                        asyncTest('add grant to account', 1, function() {
+                        asyncTest('add grant to account', 1, function(test) {
                           api.addGrantToAccount({
                             grantId: grant.grantId,
                             accountId: account.accountId
                           }, function(added) {
-                            ok(true, 'Adding grant to account must return non-error HTTP code');
+                            test.ok(true, 'Adding grant to account must return non-error HTTP code');
 
-                            asyncTest('describe grant', 1, function() {
+                            asyncTest('describe grant', 1, function(test) {
                               api.describeGrant(grant.grantId, function(grant) {
-                                equal(grant.name, grantName, 'Described grant name should be original name');
+                                test.equal(grant.name, grantName, 'Described grant name should be original name');
 
-                                asyncTest('delete grant', 1, function() {
+                                asyncTest('delete grant', 1, function(test) {
                                   api.deleteGrant(grant.grantId, function(deleted) {
-                                    ok(true, 'Delete grant must return non-error HTTP code');
-                                    start();
+                                    test.ok(true, 'Delete grant must return non-error HTTP code');
                                   });
                                 });
-
-                                start();
                               });
                             });
-
-                            start();
                           });
                         });
-
-                        start();
                       });
                     });
-
-                    start();
                   });
                 });
-
-                start();
               });
             });
-
-            start();
           });
         });
-
-        start();
       });
     });
   });
@@ -290,4 +254,3 @@ asyncTest('create grant', function() {
 // Not tested:
 
 // requestPasswordReset
-*/
