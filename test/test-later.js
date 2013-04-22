@@ -21,8 +21,6 @@ var QUnit = (function(QUnit, T) {
 
       var args = Array.prototype.slice.call(arguments, 0);
 
-      console.log(args);
-
       var futureOfArray = Future.every.apply(null, args);
 
       return futureOfArray.then(function(array) {
