@@ -11,14 +11,14 @@ var account$ = anonApi.createAccount(user, function(account) {
   return anonApi.describeAccount(user);
 });
 
-QUnit.asyncTest("describe account", 1, function(test) {
+asyncTest("describe account", 1, function(test) {
   account$.then(function(account) {
     test.equal(account.email, user.email, 'Email returned from describeAccount is same');
   });
 });
 
 
-QUnit.asyncTest("current plan", 1, function(test) {
+asyncTest("current plan", 1, function(test) {
   anonApi.currentPlan(user, function(plan) {
     test.equal(plan.type, 'Free', 'Created plan should be Free');
   });

@@ -187,3 +187,5 @@ var QUnit = (function(QUnit, T) {
 
   return T;
 })(QUnit, {});
+
+if (typeof window !== 'undefined') window.asyncTest = QUnit.asyncTest;
