@@ -739,32 +739,28 @@ function Precog(config) {
       break;
     }
 
-    function handle() {
-      return PrecogHttp.post({
-        url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-        content:  info.contents,
-        query:    {
-          apiKey:         self.config.apiKey,
-          ownerAccountId: info.ownerAccountId,
-          delimiter:      info.delimiter,
-          quote:          info.quote,
-          escape:         info.escape
-        },
-        headers:  { 'Content-Type': info.type },
-        success:  Util.defSuccess(success),
-        failure:  Util.defFailure(failure)
-      });
-    }
-
     if (emulate) {
       // FIXME: EMULATION
       localStorage.setItem(fullPath, {type: info.type, contents: info.contents});
 
       return ToFuture(undefined).then(Util.safeCallback(success), Util.safeCallback(failure));
     } else {
-      return self.delete0(fullPath).
-              then(handle)["catch"](handle). // We don't care if the delete failed
-              then(Util.safeCallback(success), Util.safeCallback(failure));
+      return new Future(function(resolver) {
+        self.delete0(fullPath).done(function() {
+          return PrecogHttp.post({
+            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+            content:  info.contents,
+            query:    {
+              apiKey:         self.config.apiKey,
+              ownerAccountId: info.ownerAccountId,
+              delimiter:      info.delimiter,
+              quote:          info.quote,
+              escape:         info.escape
+            },
+            headers:  { 'Content-Type': info.type }
+          }).then(function(v) { resolver.resolve(v.content); });
+        });
+      }).then(Util.safeCallback(success), Util.safeCallback(failure));
     }
   };
 
