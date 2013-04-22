@@ -72,7 +72,7 @@ var QUnit = (function(QUnit, T) {
 
       // Play back all tests:
       for (var i = 0; i < self.deferred.length; i++) {
-        self.deferred(i);
+        self.deferred[i]();
       }
 
       QUnit.stop();
