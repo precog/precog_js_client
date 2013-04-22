@@ -19,11 +19,20 @@ var QUnit = (function(QUnit, T) {
     return function() {
       var self = this;
 
-      var futureOfArray = Future.every(toFutureList(arguments));
+      var args = Array.prototype.slice.call(arguments, 0);
+
+      console.log(args);
+
+      var futureOfArray = Future.every(args);
 
       return futureOfArray.then(function(array) {
+        console.log('Future delivered with ' + array);
+
         return unlifted.apply(self, array);
-      })["catch"](self.catcher);      
+      })["catch"](function(reason) { 
+        console.error('Future failed with ' + reason);
+        return self.catcher(reason);
+      });      
     };
   };
 
@@ -38,6 +47,10 @@ var QUnit = (function(QUnit, T) {
   };
 
   Test.prototype.start = function() {
+    QUnit.stop();
+
+    console.debug('Starting test "' + this.name + '" for attempt #' + this.count);
+
     return this.body(this);
   };
 
@@ -67,6 +80,8 @@ var QUnit = (function(QUnit, T) {
   };
 
   Test.prototype.markTest = function(succeeded, qtest) {
+    console.debug('Marking test as ' + (succeeded ? 'succeeded' : 'failed'));
+
     var self = this;
 
     self.deferred.push(qtest);
@@ -93,6 +108,8 @@ var QUnit = (function(QUnit, T) {
 
     // There was one or more failures. See if we can retry:
     if (self.tries < T.MaxRetryCount) {
+      console.debug('More retries left for test "' + self.name + '", retrying entire test');
+
       var next = new Test(self.name, self.count, self.body, self.tries + 1);
 
       // Start the next test after waiting a while:
@@ -108,6 +125,8 @@ var QUnit = (function(QUnit, T) {
   });
 
   Test.prototype.equal = lift(function(actual, expected, message) { 
+    console.debug('Checking to see if ' + expected + ' is equal to ' + actual);
+    
     this.markTest(expected == actual, function(){return QUnit.equal(actual, expected, message);});
   });
 
@@ -160,12 +179,14 @@ var QUnit = (function(QUnit, T) {
     if (actual) ok = true;
     else ok = false;
 
-    this.markTest(ok, function(){return QUnit["throws"](block, expected, message);}));
+    this.markTest(ok, function(){return QUnit["throws"](block, expected, message);});
   });
 
   T.asyncTest = function(name, count, body) {
+    console.debug('Starting asynchronous test "' + name + '" with ' + count + ' tests');
+
     (new Test(name, count, body)).start();
   };
 
   return T;
-})(QUnit, {}});
+})(QUnit, {});
