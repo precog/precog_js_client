@@ -774,11 +774,29 @@ function Precog(config) {
 
       localStorage.setItem(fullPath, fileNode);
 
-      // TODO: If the file is a script, immediately execute and store the results
-      //       in the REAL file system as a data file by the same name, so Quirrel
-      //       load() function can access the data.
+      if (info.type === 'text/x-quirrel-script') {
+        // The file is a script, immediately execute it:
+        return self.executeFile({
+          path: fullPath
+        }).then(function(results) {
+          // Take the data, and upload it to the file system.
+          var data = results.data;
 
-      return ToFuture({versions:{head: fileNode.version}}).then(Util.safeCallback(success), Util.safeCallback(failure)); // END
+          return uploadFile({
+            path:     fullPath,
+            type:     'application/json',
+            contents: data
+          });
+        }).then(function() {
+          return {versions: {head: fileNode.version}};
+        }).then(Util.safeCallback(success), Util.safeCallback(failure));
+      } else {
+        // The file is not a script, so we can't execute it, so just
+        // report success:
+        return ToFuture({versions:{head: fileNode.version}}).then(Util.safeCallback(success), Util.safeCallback(failure));
+      }
+
+      // END EMULATION
     } else {
       return new Future(function(resolver) {
         self.delete0(fullPath).done(function() {
