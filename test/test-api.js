@@ -1,7 +1,7 @@
 var analyticsService = 'https://devapi.precog.com';
 
 var user = {
-  email: 'dotnettest' + new Date().valueOf() + '@precog.com',
+  email: 'jstest' + new Date().valueOf() + '@precog.com',
   password: Math.random().toString()
 };
 
