@@ -55,6 +55,8 @@ var AUnit = (function(QUnit, T) {
   };
 
   Test.prototype.catcher = function(reason) {
+    log.error('Failed "' + this.name + '" for reason: ' + reason);
+    
     var self = this;
 
     self.markTest(false, function() {
@@ -203,5 +205,3 @@ var AUnit = (function(QUnit, T) {
 
   return T;
 })(QUnit, {});
-
-delete window.asyncTest;

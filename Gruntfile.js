@@ -22,7 +22,11 @@ module.exports = function(grunt) {
       }
     },
     qunit: {
-      files: ['test/**/*.html']
+      files: ['test/**/*.html'],
+      
+      options: {
+        timeout: 10000
+      }
     },
     jshint: {
       files: ['gruntfile.js', 'src/*.js', 'test/**/*.js'],
