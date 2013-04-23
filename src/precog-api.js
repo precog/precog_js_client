@@ -660,15 +660,19 @@ function Precog(config) {
    * Precog.listDescendants('/foo');
    */
   Precog.prototype.listDescendants = function(path, success, failure) {
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
     var listDescendants0 = function(root) {
-      this.listChildren(root).then(function(children) {
+      self.listChildren(root).then(function(children) {
         var futures = Util.amap(children, function(child) {
           var fullPath = root + '/' + child;
 
           return listDescendants0(fullPath);
         });
 
-        return Future.every(futures).then(function(arrays) {
+        return Future.every.call(null, futures).then(function(arrays) {
           var merged = [];
           merged.concat.apply(merged, arrays);
           return merged;
@@ -727,6 +731,7 @@ function Precog(config) {
 
     var fullPath = targetDir + '/' + targetName;
 
+    // FIXME: EMULATION
     var emulate;
 
     switch (info.type) {
