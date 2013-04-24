@@ -3,6 +3,10 @@
   "name": "precog-js-client",
   "version": "0.1.0",
   "description": "",
+  "scripts": {
+    "test": "node_modules/.bin/grunt test",
+    "prepublish": "node_modules/.bin/grunt"
+  },
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-cli": "~0.1.7",
