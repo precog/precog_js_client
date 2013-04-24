@@ -18,11 +18,18 @@
   }
 })(function() {
   //= ext/Base64.js
+
   //= ext/json2.js
+
   if (typeof window !== 'undefined') {
     //= ext/sessionstorage.1.4.js
   }
-  //= ext/Future.js
+
+  //= ext/vow.js
+  if (typeof window == 'undefined') {
+    Vow = module.exports;
+  }
+
   //= precog-http.js
   //= precog-api.js
 

@@ -12,21 +12,8 @@ module.exports = function(grunt) {
         dest: 'dist/<%= pkg.name %>.min.js'
       }
     },
-    'node-qunit': {
-      all: {
-        code: {
-          path: 'dist/precog-js-client.js',
-          namespace: 'Precog'
-        },
-        tests: 'test/test-api.js'
-      }
-    },
-    qunit: {
-      files: ['test/**/*.html'],
-      
-      options: {
-        timeout: 10000
-      }
+    nodeunit: {
+      all: ['test/**/test-*.js']
     },
     jshint: {
       files: ['gruntfile.js', 'src/*.js', 'test/**/*.js'],
@@ -51,18 +38,17 @@ module.exports = function(grunt) {
     },
     watch: {
       files: ['<%= jshint.files %>'],
-      tasks: ['jshint', 'rig', 'qunit']
+      tasks: ['jshint', 'rig'/*, 'qunit'*/]
     }
   });
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-qunit');
+  grunt.loadNpmTasks('grunt-contrib-nodeunit');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-node-qunit');
   grunt.loadNpmTasks('grunt-rigger');
 
-  grunt.registerTask('test', ['jshint', 'rig', 'node-qunit', 'qunit']);
+  grunt.registerTask('test', ['jshint', 'rig', 'nodeunit']);
 
-  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'qunit']);
+  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'nodeunit']);
 };

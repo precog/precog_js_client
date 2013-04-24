@@ -76,12 +76,11 @@ function Precog(config) {
     else return f;
   };
 
-  Util.defSuccessSingletonArray = function(success) {
-    return Util.composef(success, Util.composef(Util.unwrapSingleton, Util.extractContent));
-  };
-
   Util.defFailure = function(failure) {
-    return Util.composef(failure, function(r) { return {message: r.statusText, code: r.statusCode};});
+    if(failure) return failure;
+    return function(r) {
+      throw new Error(r.status + ' ' + r.statusText);
+    };
   };
 
   Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
@@ -195,15 +194,29 @@ function Precog(config) {
    */
   Precog.prototype.lookupAccountId = function(email, success, failure) {
     var self = this;
+    var resolver = Vow.promise();
 
     Util.requireParam(email, 'email');
 
-    return PrecogHttp.get({
+    PrecogHttp.get({
       url:      self.accountsUrl("accounts/search"),
       query:    {email: email},
-      success:  Util.defSuccessSingletonArray(success),
-      failure:  Util.defFailure(failure)
+      success:  function(response) {
+        var account = Util.unwrapSingleton(Util.extractContent(response));
+
+        if(!account) {
+          resolver.reject({status: response.status, statusText: 'No account ID found for given email'});
+          return;
+        }
+
+        resolver.fulfill(account);
+      },
+      failure:  function(response) {
+        resolver.reject(response);
+      }
     });
+
+    return resolver.then(success, Util.defFailure(failure));
   };
 
   /**
@@ -672,7 +685,7 @@ function Precog(config) {
           return listDescendants0(fullPath);
         });
 
-        return Future.every.call(null, futures).then(function(arrays) {
+        return Vow.all(futures).then(function(arrays) {
           var merged = [];
           merged.concat.apply(merged, arrays);
           return merged;
@@ -798,22 +811,22 @@ function Precog(config) {
 
       // END EMULATION
     } else {
-      return new Future(function(resolver) {
-        self.delete0(fullPath).done(function() {
-          return PrecogHttp.post({
-            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-            content:  info.contents,
-            query:    {
-              apiKey:         self.config.apiKey,
-              ownerAccountId: info.ownerAccountId,
-              delimiter:      info.delimiter,
-              quote:          info.quote,
-              escape:         info.escape
-            },
-            headers:  { 'Content-Type': info.type }
-          }).then(function(v) { resolver.resolve(v.content); });
-        });
-      }).then(Util.safeCallback(success), Util.safeCallback(failure));
+      var resolver = Vow.promise();
+      self.delete0(fullPath).then(function() {
+        return PrecogHttp.post({
+          url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+          content:  info.contents,
+          query:    {
+            apiKey:         self.config.apiKey,
+            ownerAccountId: info.ownerAccountId,
+            delimiter:      info.delimiter,
+            quote:          info.quote,
+            escape:         info.escape
+          },
+          headers:  { 'Content-Type': info.type }
+        }).then(function(v) { resolver.fulfill(v.content); });
+      }).done();
+      return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
     }
   };
 
@@ -962,7 +975,7 @@ function Precog(config) {
 
       var futures = Util.amap(children, self.delete0);
 
-      return Future.every(futures);
+      return Vow.all(futures);
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 

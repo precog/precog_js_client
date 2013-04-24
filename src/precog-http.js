@@ -78,17 +78,17 @@ function PrecogHttp(options) {
   };
 
   Util.info = function(v) {
-    if(typeof console !== 'undefined') console.info(v);
+    if(typeof console !== 'undefined') console.info ? console.info(v) : console.log(v);
     return v;
   };
 
   Util.error = function(v) {
-    if(typeof console !== 'undefined') console.error(v);
+    if(typeof console !== 'undefined') console.error ? console.error(v) : console.log(v);
     return v;
   };
 
   Util.debug = function(v) {
-    if(typeof console !== 'undefined') console.debug(v);
+    if(typeof console !== 'undefined') console.debug ? console.debug(v) : console.log(v);
     return v;
   };
 
@@ -172,56 +172,58 @@ function PrecogHttp(options) {
    * })
    */
   PrecogHttp.ajax = Util.defopts(function(options) {
-    return new Future(function(resolver) {
-      var request = PrecogHttp.createAjax();
+    var resolver = Vow.promise();
 
-      request.open(options.method, options.url, options.sync);
+    var request = PrecogHttp.createAjax();
 
-      request.upload && (request.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-          options.progress({loaded : e.loaded, total : e.total });
-        }
-      });
+    request.open(options.method, options.url, options.sync);
 
-      request.onreadystatechange = function() {
-        var headers = Util.parseResponseHeaders(request);
-
-        if (request.readyState === 4) {
-          var content = this.responseText;
-
-          if (content != null) {
-            try {
-              var ctype = headers['Content-Type'];
-              if (ctype == 'application/json' || ctype == 'text/json')
-                content = JSON.parse(this.responseText);
-            } catch (e) {}
-          }
-
-          Util.responseCallback({
-            headers:    headers,
-            content:    content,
-            status:     request.status,
-            statusText: request.statusText
-          }, resolver.accept, resolver.reject);
-        }
-      };
-
-      for (var name in options.headers) {
-        var value = options.headers[name];
-        request.setRequestHeader(name, value);
+    request.upload && (request.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        options.progress({loaded : e.loaded, total : e.total });
       }
+    });
 
-      if (options.content !== undefined) {
-        if (options.headers['Content-Type']) {
-          request.send(options.content);
-        } else {
-          request.setRequestHeader('Content-Type', 'application/json');
-          request.send(JSON.stringify(options.content));
+    request.onreadystatechange = function() {
+      var headers = Util.parseResponseHeaders(request);
+
+      if (request.readyState === 4) {
+        var content = this.responseText;
+
+        if (content != null) {
+          try {
+            var ctype = headers['Content-Type'];
+            if (ctype == 'application/json' || ctype == 'text/json')
+              content = JSON.parse(this.responseText);
+          } catch (e) {}
         }
+
+        Util.responseCallback({
+          headers:    headers,
+          content:    content,
+          status:     request.status,
+          statusText: request.statusText
+        }, function(x) { resolver.fulfill(x); }, function(x) { resolver.reject(x); });
+      }
+    };
+
+    for (var name in options.headers) {
+      var value = options.headers[name];
+      request.setRequestHeader(name, value);
+    }
+
+    if (options.content !== undefined) {
+      if (options.headers['Content-Type']) {
+        request.send(options.content);
       } else {
-        request.send(null);
+        request.setRequestHeader('Content-Type', 'application/json');
+        request.send(JSON.stringify(options.content));
       }
-    }).then(options.success, options.failure);
+    } else {
+      request.send(null);
+    }
+
+    return resolver.then(options.success, options.failure);
   });
 
   /**
@@ -241,63 +243,63 @@ function PrecogHttp(options) {
     var random = Math.floor(Math.random() * 214748363);
     var fname  = 'PrecogJsonpCallback' + random.toString();
 
-    var future = new Future(function(resolver) {
-      window[fname] = function(content, meta) {
-        Util.responseCallback({
-          headers:    meta.headers,
-          content:    content,
-          status:     meta.status.code,
-          statusText: meta.status.reason
-        }, resolver.accept, resolver.reject);
+    var resolver = Vow.promise();
 
-        document.head.removeChild(document.getElementById(fname));
+    window[fname] = function(content, meta) {
+      Util.responseCallback({
+        headers:    meta.headers,
+        content:    content,
+        status:     meta.status.code,
+        statusText: meta.status.reason
+      }, function(x) { resolver.fulfill(x); }, function(x) { resolver.reject(x); });
 
-        try{
-          delete window[fname];
-        } catch(e) {
-          window[fname] = undefined;
-        }
-      };
+      document.head.removeChild(document.getElementById(fname));
 
-      var query = {
-        method:   options.method,
-        callback: fname
-      };
-
-      if (options.headers && Util.objsize(options.headers) > 0) {
-        query.headers = JSON.stringify(options.headers);
+      try{
+        delete window[fname];
+      } catch(e) {
+        window[fname] = undefined;
       }
-      if (options.content !== undefined) {
-        query.content = JSON.stringify(options.content);
-      }
+    };
 
-      var script = document.createElement('SCRIPT');
+    var query = {
+      method:   options.method,
+      callback: fname
+    };
 
-      if (script.addEventListener) {
-        script.addEventListener('error',
-                                function(e) {
-                                  options.failure({
-                                    headers:    {},
-                                    content:    undefined,
-                                    statusText: e.message || 'Failed to load script from server',
-                                    statusCode: 400
-                                  });
-                                },
-                                true
-                               );
-      }
+    if (options.headers && Util.objsize(options.headers) > 0) {
+      query.headers = JSON.stringify(options.headers);
+    }
+    if (options.content !== undefined) {
+      query.content = JSON.stringify(options.content);
+    }
 
-      script.setAttribute('type', 'text/javascript');
-      script.setAttribute('src',  Util.addQuery(options.url, query));
-      script.setAttribute('id',   fname);
+    var script = document.createElement('SCRIPT');
 
-      // Workaround for document.head being undefined.
-      if (!document.head) document.head = document.getElementsByTagName('head')[0];
+    if (script.addEventListener) {
+      script.addEventListener('error',
+                              function(e) {
+                                options.failure({
+                                  headers:    {},
+                                  content:    undefined,
+                                  statusText: e.message || 'Failed to load script from server',
+                                  statusCode: 400
+                                });
+                              },
+                              true
+                             );
+    }
 
-      document.head.appendChild(script);
-    }).then(options.success, options.failure);
+    script.setAttribute('type', 'text/javascript');
+    script.setAttribute('src',  Util.addQuery(options.url, query));
+    script.setAttribute('id',   fname);
 
-    return future;
+    // Workaround for document.head being undefined.
+    if (!document.head) document.head = document.getElementsByTagName('head')[0];
+
+    document.head.appendChild(script);
+
+    return resolver.then(options.success, options.failure);
   });
 
   /**
@@ -317,40 +319,49 @@ function PrecogHttp(options) {
     var reqOptions = require('url').parse(options.url);
     var http = require(reqOptions.protocol == 'https:' ? 'https' : 'http');
 
+    var resolver = Vow.promise();
+
     reqOptions.method = options.method;
     reqOptions.headers = options.headers;
 
     if (options.content && !options.headers['Content-Type'])
       reqOptions.headers['Content-Type'] = 'application/json';
 
-    var future = new Future(function(resolver) {
-      var request = http.request(reqOptions, function(response) {
-        var data = '';
-        response.setEncoding('utf8');
-        response.on('data', function (chunk) {
-          data += chunk;
+    var request = http.request(reqOptions, function(response) {
+      var data = '';
+      response.setEncoding('utf8');
+      response.on('data', function (chunk) {
+        data += chunk;
 
-          if (response.headers['Content-Length'])
-            options.progress({loaded : data.length, total : response.headers['Content-Length'] });
-        });
-        response.on('end', function() {
-          Util.responseCallback({
-            headers:    response.headers,
-            content:    data ? (response.headers['content-type'] == 'application/json' ? JSON.parse(data) : data) : undefined,
-            status:     response.statusCode,
-            statusText: 'statusText not available from nodejs http module'
-          }, resolver.accept, resolver.reject);
-        });
+        if (response.headers['content-length'])
+          options.progress({loaded : data.length, total : response.headers['content-length'] });
       });
+      response.on('end', function() {
+        var content = data;
+        var ctype = response.headers['content-type'];
 
-      if (options.content) {
-        request.write(options.headers['Content-Type'] && typeof options.content != 'string' ? JSON.stringify(options.content) : options.content);
-      }
+        if (content && (ctype == 'application/json' || ctype == 'text/json')) {
+          try {
+            content = JSON.parse(content);
+          } catch (e) {}
+        }
 
-      request.end();
-    }).then(options.success, options.failure);
+        Util.responseCallback({
+          headers:    response.headers,
+          content:    content,
+          status:     response.statusCode,
+          statusText: require('http').STATUS_CODES[response.statusCode]
+        }, function(x) { resolver.fulfill(x); }, function(x) { resolver.reject(x); });
+      });
+    });
 
-    return future;
+    if (options.content) {
+      request.write(options.headers['Content-Type'] && typeof options.content != 'string' ? JSON.stringify(options.content) : options.content);
+    }
+
+    request.end();
+
+    return resolver.then(options.success, options.failure);
   });
 
   PrecogHttp.get = function(options) {
