@@ -1,8 +1,8 @@
 {
   "author": "John A. De Goes",
-  "name": "precog-js-client",
+  "name": "precog",
   "version": "0.1.0",
-  "description": "",
+  "description": "Client for Precog, a cloud-based analytics platform.",
   "scripts": {
     "test": "node_modules/.bin/grunt test",
     "prepublish": "node_modules/.bin/grunt"
