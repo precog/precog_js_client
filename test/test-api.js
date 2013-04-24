@@ -1,5 +1,5 @@
 nodeunit = typeof nodeunit == 'undefined' ? require('nodeunit') : nodeunit;
-Precog = typeof Precog == 'undefined' ? require('../dist/precog-js-client') : Precog;
+Precog = typeof Precog == 'undefined' ? require('..') : Precog;
 
 var state = {};
 
