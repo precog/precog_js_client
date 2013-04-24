@@ -7,6 +7,7 @@
     "test": "node_modules/.bin/grunt test",
     "prepublish": "node_modules/.bin/grunt"
   },
+  "main": "dist/precog",
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-cli": "~0.1.7",
