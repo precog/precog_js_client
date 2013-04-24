@@ -28,7 +28,7 @@ And load the library:
 var precog = require('precog');
 ```
 
-## Developement
+## Development
 
 If you would like to made modifications to the source, you can build a
 distribution by running the following from the project directory:
