@@ -38,7 +38,7 @@ module.exports = function(grunt) {
     },
     watch: {
       files: ['<%= jshint.files %>'],
-      tasks: ['jshint', 'rig'/*, 'qunit'*/]
+      tasks: ['jshint', 'rig', 'nodeunit']
     }
   });
 
