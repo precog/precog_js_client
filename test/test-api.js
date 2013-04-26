@@ -15,10 +15,12 @@ var anonApi = new Precog.api({analyticsService: analyticsService});
 var grantName = 'testgrant';
 var childGrantName = 'testchildgrant';
 var uploadPathRoot;
+var originalUploadPath;
 var uploadPath;
 
 var account$ = anonApi.createAccount(user, function(account) {
   uploadPathRoot = '/' + account.accountId;
+  originalUploadPath = uploadPathRoot + '/' + 'original';
   uploadPath = uploadPathRoot + '/' + 'test';
   return anonApi.describeAccount(user);
 });
@@ -183,7 +185,7 @@ var testApi = {
     account$.then(function(account) {
       api$.then(function(api) {
         return api.uploadFile({
-          path: uploadPath,
+          path: originalUploadPath,
           contents: '{"name": "John", "email": "john@precog.com"}\n{"name": "Brian", "email": "brian@precog.com"}',
           type: 'application/json'
         }, function(report) {
@@ -194,12 +196,32 @@ var testApi = {
           test.equal(report.ingested, 2, 'Should have ingested two items');
           test.notEqual(report.ingestId, undefined, 'Should have an ingest ID');
           test.done();
-
-
         });
       });
     });
   },
+  'move file': function(test) {
+    api$.then(function(api) {
+      api.moveFile({
+        source: originalUploadPath,
+        destination: uploadPath
+      }, function() {
+        test.ok(true, 'Move file should return non-error HTTP code');
+        test.done();
+      }, function() {
+        test.ok(false, 'Move file should not return an invalid HTTP code');
+        test.done();
+      });
+    });
+  },
+  'list descendents': retry(10, function(test) {
+    api$.then(function(api) {
+      api.listDescendants(uploadPathRoot, function(descendents) {
+        test.equal(descendents.length, 1, 'Descendents must have size');
+        test.done();
+      });
+    });
+  }),
   'listing children': retry(10, function(test) {
     api$.then(function(api) {
       api.listChildren(uploadPathRoot, function(children) {

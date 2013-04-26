@@ -2141,7 +2141,7 @@
       Util.requireParam(path, 'path');
   
       var dirNode = {};
-      if(typeof localStorage != 'undefined') {
+      if (typeof localStorage != 'undefined') {
         // FIXME: EMULATION
         // Add extra children not stored in file system:
         dirNode = localStorage.getItem(path) || {};
@@ -2166,23 +2166,24 @@
   
       Util.requireParam(path, 'path');
   
-      var listDescendants0 = function(root) {
-        self.listChildren(root).then(function(children) {
+      function listDescendants0(root, prefix) {
+        return self.listChildren(root).then(function(children) {
           var futures = Util.amap(children, function(child) {
             var fullPath = root + '/' + child;
   
-            return listDescendants0(fullPath);
+            return listDescendants0(fullPath, prefix + child);
           });
   
           return Vow.all(futures).then(function(arrays) {
-            var merged = [];
-            merged.concat.apply(merged, arrays);
-            return merged;
+            var prefixed = Util.amap(children, function(child) {
+              return prefix + child;
+            });
+            return [].concat.apply(prefixed, arrays);
           });
         });
-      };
+      }
   
-      return listDescendants0(path).then(Util.safeCallback(success), Util.safeCallback(failure));
+      return listDescendants0(path, '').then(Util.safeCallback(success), Util.safeCallback(failure));
     };
   
     /**
@@ -2348,14 +2349,14 @@
     Precog.prototype.retrieveFile = function(path, success, failure) {
       var self = this;
   
-      if (localStorage.getItem(path)) {
+      if (typeof localStorage != 'undefined' && localStorage.getItem(path)) {
         // FIXME: EMULATION
         var result = localStorage.getItem(path);
   
         return ToFuture({content: result.content, type: result.type}).
           then(Util.safeCallback(success), Util.safeCallback(failure)); // END
       } else {
-        return self.execute('load("' + path + '")').then(function(results) {
+        return self.execute({query: 'load("' + path + '")'}, function(results) {
           if (results.errors && results.errors.length > 0) {
             Util.error('Cannot load file due to errors: ' + JSON.stringify(results));
           } else {
@@ -2429,7 +2430,7 @@
   
       self.requireConfig('apiKey');
   
-      if(typeof localStorage != 'undefined') {
+      if (typeof localStorage != 'undefined') {
         // FIXME: EMULATION
         // Delete files stored locally:
         var pathNode = (localStorage.getItem(path) || {});
@@ -2468,6 +2469,76 @@
       }).then(Util.safeCallback(success), Util.safeCallback(failure));
     };
   
+    /**
+     * Copies a file from specified source to specified destination.
+     *
+     * @example
+     * Precog.copyFile({source: '/foo/v1.qrl', destination: '/foo/v2.qrl'})
+     */
+    Precog.prototype.copyFile = function(info, succcess, failure) {
+      var self = this;
+  
+      Util.requireField(info, 'source');
+      Util.requireField(info, 'destination');
+  
+      return self.retrieveFile(info.source, function(contents) {
+        return self.uploadFile({
+          path: info.destination,
+          // Hack: urgh, we need to know the type of locally stored files
+          type: 'application/json',
+          contents: contents
+        }).then(Util.defSuccess(succcess));
+      }, Util.defFailure(failure));
+    };
+  
+    /**
+     * Copies then deletes a file from specified source to specified
+     * destination.
+     *
+     * @example
+     * Precog.moveFile({source: '/foo/helloo.qrl', destination: '/foo/hello.qrl'})
+     */
+    Precog.prototype.moveFile = function(info, success, failure) {
+      var self = this;
+  
+      Util.requireField(info, 'source');
+      Util.requireField(info, 'destination');
+  
+      return self.copyFile(info, function() {
+        return self.delete0(info.source).then(Util.defSuccess(success));
+      }, Util.defFailure(failure));
+    };
+  
+    /**
+     * Copies then deletes a whole directory from specified source to
+     * specified destination.
+     *
+     * @example
+     * Precog.moveDirectory({source: '/foo/helloo', destination: '/foo/hello'})
+     */
+    Precog.prototype.moveDirectory = function(info, success, failure) {
+      var self = this;
+  
+      Util.requireField(info, 'source');
+      Util.requireField(info, 'destination');
+  
+      return self.listDescendants(info.source, function(descendants) {
+        var resolvers = [];
+  
+        // Copy each file
+        for(var i = 0; i < descendants.length; i++) {
+          resolvers.push(self.copyFile({
+            source: info.source + '/' + descendants[i],
+            destination: info.destination + '/' + descendants[i]
+          }));
+        }
+  
+        return Vow.all(resolvers).then(function() {
+          return self.deleteAll(info.source);
+        }).then(Util.defSuccess(success));
+      }, Util.defFailure(failure));
+    };
+  
     // ****************
     // *** ANALYSIS ***
     // ****************
@@ -2481,10 +2552,10 @@
     Precog.prototype.executeFile = function(info, success, failure) {
       var self = this;
   
-      Util.requireField(path, 'path');
+      Util.requireField(info, 'path');
   
       // FIXME: EMULATION
-      if (info.maxAge) {
+      if (typeof localStorage != 'undefined' && info.maxAge) {
         // User wants to cache, see if there's a cached version:
         var storedEntry = localStorage.getItem(info.path);
   
@@ -2509,19 +2580,21 @@
           };
   
           return self.execute(executeRequest).then(function(results) {
-            var storedEntry = localStorage.getItem(info.path);
+            if (typeof localStorage != 'undefined') {
+              var storedEntry = localStorage.getItem(info.path);
   
-            if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
+              if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
   
-            // If there are no errors, store the cached execution of the script:
-            if (!results.errors || !results.errors.length) {
-              storedEntry.cached = {
-                results:   results,
-                timestamp: (new Date()).getMilliseconds() / 1000
-              };
+              // If there are no errors, store the cached execution of the script:
+              if (!results.errors || !results.errors.length) {
+                storedEntry.cached = {
+                  results:   results,
+                  timestamp: (new Date()).getMilliseconds() / 1000
+                };
+              }
+  
+              localStorage.setItem(info.path, storedEntry);
             }
-  
-            localStorage.setItem(info.path, storedEntry);
   
             return results;
           });
