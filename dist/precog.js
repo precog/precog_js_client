@@ -2144,7 +2144,7 @@
       if (typeof localStorage != 'undefined') {
         // FIXME: EMULATION
         // Add extra children not stored in file system:
-        dirNode = localStorage.getItem(path) || {};
+        dirNode = JSON.parse(localStorage.getItem(path) || '{}');
       }
   
       var dirChildren = dirNode.children || [];
@@ -2220,6 +2220,7 @@
      */
     Precog.prototype.uploadFile = function(info, success, failure) {
       var self = this;
+      var resolver;
   
       Util.requireField(info, 'path');
       Util.requireField(info, 'type');
@@ -2255,7 +2256,7 @@
   
       if (emulate) {
         // FIXME: EMULATION
-        var parentDirNode = localStorage.getItem(targetDir);
+        var parentDirNode = JSON.parse(localStorage.getItem(targetDir) || '{}');
         if (parentDirNode == null) parentDirNode = {};
   
         children = parentDirNode.children || [];
@@ -2265,17 +2266,17 @@
         children.push(targetName);
   
         // Keep track of children inside this node:
-        localStorage.setItem(targetDir, parentDirNode);
+        localStorage.setItem(targetDir, JSON.stringify(parentDirNode));
   
         // Keep track of the contents of this file:
-        var fileNode = localStorage.getItem(fullPath) || {};
+        var fileNode = JSON.parse(localStorage.getItem(fullPath) || '{}');
   
         fileNode.type     = info.type;
         fileNode.contents = info.contents;
         fileNode.version  = fileNode.version ? fileNode.version + 1 : 1;
         fileNode.lastModified = new Date().getMilliseconds();
   
-        localStorage.setItem(fullPath, fileNode);
+        localStorage.setItem(fullPath, JSON.stringify(fileNode));
   
         if (info.type === 'text/x-quirrel-script') {
           // The file is a script, immediately execute it:
@@ -2296,15 +2297,17 @@
         } else {
           // The file is not a script, so we can't execute it, so just
           // report success:
-          return ToFuture({versions:{head: fileNode.version}}).then(Util.safeCallback(success), Util.safeCallback(failure));
+          resolver = Vow.promise();
+          resolver.fulfill({versions:{head: fileNode.version}});
+          return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
         }
   
         // END EMULATION
       } else {
-        var resolver = Vow.promise();
+        resolver = Vow.promise();
         self.delete0(fullPath).then(function() {
           return PrecogHttp.post({
-            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
+            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs" + fullPath),
             content:  info.contents,
             query:    {
               apiKey:         self.config.apiKey,
@@ -2351,20 +2354,17 @@
   
       if (typeof localStorage != 'undefined' && localStorage.getItem(path)) {
         // FIXME: EMULATION
-        var result = localStorage.getItem(path);
+        var result = JSON.parse(localStorage.getItem(path));
+        var resolver = Vow.promise();
+        resolver.fulfill({content: result.content, type: result.type});
   
-        return ToFuture({content: result.content, type: result.type}).
-          then(Util.safeCallback(success), Util.safeCallback(failure)); // END
+        return resolver.then(Util.safeCallback(success), Util.safeCallback(failure)); // END
       } else {
         return self.execute({query: 'load("' + path + '")'}, function(results) {
-          if (results.errors && results.errors.length > 0) {
-            Util.error('Cannot load file due to errors: ' + JSON.stringify(results));
-          } else {
-            return {
-              content: results.data,
-              type:    'application/json'
-            };
-          }
+          return {
+            content: JSON.stringify(results),
+            type:    'application/json'
+          };
         }).then(Util.safeCallback(success), Util.safeCallback(failure));
       }
     };
@@ -2405,7 +2405,7 @@
       var fullPath = targetDir + '/' + targetName;
   
       return PrecogHttp.post({
-        url:      self.dataUrl(info.async ? "async" : "sync") + "/fs/" + fullPath,
+        url:      self.dataUrl(info.async ? "async" : "sync") + "/fs" + fullPath,
         content:  info.values,
         query:    {
                     apiKey:         self.config.apiKey,
@@ -2430,19 +2430,12 @@
   
       self.requireConfig('apiKey');
   
-      if (typeof localStorage != 'undefined') {
-        // FIXME: EMULATION
-        // Delete files stored locally:
-        var pathNode = (localStorage.getItem(path) || {});
-  
-        pathNode.children = [];
-  
-        localStorage.setItem(path, pathNode);
-        // END
+      if (typeof localStorage != 'undefined' && localStorage.getItem(path)) {
+        localStorage.removeItem(path);
       }
   
       return PrecogHttp.delete0({
-        url:      self.dataUrl("async/fs/" + path),
+        url:      self.dataUrl("async/fs" + path),
         query:    {apiKey: self.config.apiKey},
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
@@ -2460,10 +2453,14 @@
   
       Util.requireParam(path, 'path');
   
-      return this.listDescendants(path).then(function(children0) {
+      self.requireConfig('apiKey');
+  
+      return self.listDescendants(path).then(function(children0) {
         var children = children0.concat([path]);
   
-        var futures = Util.amap(children, self.delete0);
+        var futures = Util.amap(children, function(child) {
+          return self.delete0(child);
+        });
   
         return Vow.all(futures);
       }).then(Util.safeCallback(success), Util.safeCallback(failure));
@@ -2481,12 +2478,12 @@
       Util.requireField(info, 'source');
       Util.requireField(info, 'destination');
   
-      return self.retrieveFile(info.source, function(contents) {
+      return self.retrieveFile(info.source, function(file) {
         return self.uploadFile({
           path: info.destination,
           // Hack: urgh, we need to know the type of locally stored files
-          type: 'application/json',
-          contents: contents
+          type: file.type,
+          contents: file.content
         }).then(Util.defSuccess(succcess));
       }, Util.defFailure(failure));
     };
@@ -2557,7 +2554,7 @@
       // FIXME: EMULATION
       if (typeof localStorage != 'undefined' && info.maxAge) {
         // User wants to cache, see if there's a cached version:
-        var storedEntry = localStorage.getItem(info.path);
+        var storedEntry = JSON.parse(localStorage.getItem(info.path));
   
         if (storedEntry.cached) {
           // There's a cached version, see if it's fresh enough:
@@ -2566,14 +2563,15 @@
           var age = now - cached.timestamp;
   
           if (age < info.maxAge || info.maxStale && (age < (info.maxAge + info.maxStale))) {
-            return ToFuture(storedEntry.cached.results).
-                     then(Util.safeCallback(success), Util.safeCallback(failure));
+            var resolver = Vow.promise();
+            resolver.fulfill(storedEntry.cached.results);
+            return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
           }
         }
       }
       // END
   
-      self.retrieveFile(info.path).then(function(file) {
+      return self.retrieveFile(info.path).then(function(file) {
         if (file.type === 'text/x-quirrel-script') {
           var executeRequest = {
             query: file.contents
@@ -2581,7 +2579,7 @@
   
           return self.execute(executeRequest).then(function(results) {
             if (typeof localStorage != 'undefined') {
-              var storedEntry = localStorage.getItem(info.path);
+              var storedEntry = JSON.parse(localStorage.getItem(info.path));
   
               if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
   
@@ -2593,7 +2591,7 @@
                 };
               }
   
-              localStorage.setItem(info.path, storedEntry);
+              localStorage.setItem(info.path, JSON.stringify(storedEntry));
             }
   
             return results;

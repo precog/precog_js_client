@@ -214,14 +214,6 @@ var testApi = {
       });
     });
   },
-  'list descendents': retry(10, function(test) {
-    api$.then(function(api) {
-      api.listDescendants(uploadPathRoot, function(descendents) {
-        test.equal(descendents.length, 1, 'Descendents must have size');
-        test.done();
-      });
-    });
-  }),
   'listing children': retry(10, function(test) {
     api$.then(function(api) {
       api.listChildren(uploadPathRoot, function(children) {
@@ -246,6 +238,37 @@ var testApi = {
       api.delete0(uploadPath, function(deleted) {
         test.ok(true, 'Delete path should return non-error HTTP code');
         test.done();
+      });
+    });
+  },
+  'create descendents': function(test) {
+    api$.then(function(api) {
+      // Create a nested directory of files
+      for(var i = 0; i < 10; i++) {
+        api.uploadFile({
+          path: uploadPathRoot + '/' + i + '/' + i,
+          contents: '{"a": ' + i + '}',
+          type: 'application/json'
+        });
+      }
+      test.done();
+    });
+  },
+  'list descendents': retry(10, function(test) {
+    api$.then(function(api) {
+      api.listDescendants(uploadPathRoot, function(descendents) {
+        test.equal(descendents.length, 20, 'Descendents must have size');
+        test.done();
+      });
+    });
+  }),
+  'delete directory': function(test) {
+    api$.then(function(api) {
+      api.deleteAll(uploadPathRoot + '/0', function() {
+        api.listDescendants(uploadPathRoot, function(descendents) {
+          test.equal(descendents.length, 18, 'Descendents must have smaller size');
+          test.done();
+        });
       });
     });
   },
