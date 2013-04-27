@@ -1543,13 +1543,14 @@
       };
     };
     Util.parentPath = function(v0) {
-      var v = Util.removeTrailingSlash(v0);
+      var v = Util.removeTrailingSlash(Util.sanitizePath(v0));
       var elements = v.split('/');
       var sliced = elements.slice(0, elements.length - 1);
       if (!sliced.length) return '/';
       return sliced.join('/');
     };
-    Util.lastPathElement = function(v) {
+    Util.lastPathElement = function(v0) {
+      var v = Util.sanitizePath(v0);
       var elements = v.split('/');
       if (elements.length === 0) return undefined;
       return elements[elements.length - 1];
@@ -2400,7 +2401,7 @@
         resolver = Vow.promise();
         self.delete0(fullPath).then(function() {
           return PrecogHttp.post({
-            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs" + fullPath),
+            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
             content:  info.contents,
             query:    {
               apiKey:         self.config.apiKey,
@@ -2501,7 +2502,7 @@
       var fullPath = targetDir + '/' + targetName;
   
       return PrecogHttp.post({
-        url:      self.dataUrl(info.async ? "async" : "sync") + "/fs" + fullPath,
+        url:      self.dataUrl(info.async ? "async" : "sync") + "/fs/" + fullPath,
         content:  info.values,
         query:    {
                     apiKey:         self.config.apiKey,
@@ -2531,7 +2532,7 @@
       }
   
       return PrecogHttp.delete0({
-        url:      self.dataUrl("async/fs" + path),
+        url:      self.dataUrl("async/fs/" + path),
         query:    {apiKey: self.config.apiKey},
         success:  Util.defSuccess(success),
         failure:  Util.defFailure(failure)
