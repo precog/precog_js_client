@@ -68,21 +68,18 @@ function Precog(config) {
   };
   Util.extractField = function(field) { return function(v) { return v[field]; }; };
   Util.extractContent = Util.extractField('content');
-  Util.unwrapSingleton = function(v) { return v instanceof Array ? v[0] : v; };
-  Util.defSuccess = function(success) {
-    return Util.composef(success, Util.extractContent);
-  };
   Util.safeCallback = function(f) {
-    if (f == null) return function(v) { return v; };
-    else return f;
+    if (f == null) {
+      return function(v) { return v; };
+    } else {
+      return function(v) {
+        var r = f(v);
+        if (r === undefined) return v;
+        return r;
+      };
+    }
   };
 
-  Util.defFailure = function(failure) {
-    if(failure) return failure;
-    return function(r) {
-      throw new Error(r.status + ' ' + r.statusText);
-    };
-  };
   Util.sanitizePath = function(path) {
     return path.replace(/\/+/g, '/');
   };
@@ -122,6 +119,11 @@ function Precog(config) {
     } else {
       return o2;
     }
+  };
+  Util.addCallbacks = function(f) {
+    return function(v, success, failure) {
+      return f.call(this, v).then(Util.safeCallback(success), failure);
+    };
   };
 
   Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
@@ -189,7 +191,7 @@ function Precog(config) {
    * @example
    * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
    */
-  Precog.prototype.createAccount = function(account, success, failure) {
+  Precog.prototype.createAccount = Util.addCallbacks(function(account) {
     var self = this;
 
     Util.requireField(account, 'email');
@@ -198,10 +200,9 @@ function Precog(config) {
     return PrecogHttp.post({
       url:      self.accountsUrl("accounts/"),
       content:  account,
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Requests a password reset for the specified email. This may or may not have
@@ -210,7 +211,7 @@ function Precog(config) {
    * @example
    * Precog.requestPasswordReset('jdoe@foo.com');
    */
-  Precog.prototype.requestPasswordReset = function(email, success, failure) {
+  Precog.prototype.requestPasswordReset = Util.addCallbacks(function(email) {
     var self = this;
 
     Util.requireParam(email, 'email');
@@ -219,11 +220,10 @@ function Precog(config) {
       return PrecogHttp.post({
         url:      self.accountsUrl("accounts") + "/" + accountId + "/password/reset",
         content:  {email: email},
-        success:  Util.defSuccess(success),
-        failure:  Util.defFailure(failure)
+        success:  Util.extractContent
       });
-    }, Util.defFailure(failure));
-  };
+    });
+  });
 
   /**
    * Looks up the account associated with the specified email address.
@@ -231,7 +231,7 @@ function Precog(config) {
    * @example
    * Precog.lookupAccountId('jdoe@foo.com');
    */
-  Precog.prototype.lookupAccountId = function(email, success, failure) {
+  Precog.prototype.lookupAccountId = Util.addCallbacks(function(email) {
     var self = this;
     var resolver = Vow.promise();
 
@@ -241,22 +241,19 @@ function Precog(config) {
       url:      self.accountsUrl("accounts/search"),
       query:    {email: email},
       success:  function(response) {
-        var account = Util.unwrapSingleton(Util.extractContent(response));
+        var accounts = response.content;
 
-        if(!account) {
-          resolver.reject({status: response.status, statusText: 'No account ID found for given email'});
-          return;
+        if (!accounts || accounts.length === 0) {
+          resolver.reject({status: 400, statusText: 'No account ID found for given email'});
+        } else {
+          resolver.fulfill(accounts[0]);
         }
-
-        resolver.fulfill(account);
       },
-      failure:  function(response) {
-        resolver.reject(response);
-      }
+      failure: resolver.reject
     });
 
-    return resolver.then(success, Util.defFailure(failure));
-  };
+    return resolver;
+  });
 
   /**
    * Describes the specified account, identified by email and password.
@@ -264,7 +261,7 @@ function Precog(config) {
    * @example
    * Precog.describeAccount({email: 'jdoe@foo.com', password: 'abc123'});
    */
-  Precog.prototype.describeAccount = function(account, success, failure) {
+  Precog.prototype.describeAccount = Util.addCallbacks(function(account) {
     var self = this;
 
     Util.requireField(account, 'email');
@@ -277,11 +274,10 @@ function Precog(config) {
           password: account.password
         },
         url:      self.accountsUrl("accounts/" + response.accountId),
-        success:  Util.defSuccess(success),
-        failure:  Util.defFailure(failure)
+        success:  Util.extractContent
       });
-    }, Util.defFailure(failure));
-  };
+    });
+  });
 
   /**
    * Adds a grant to the specified account.
@@ -291,7 +287,7 @@ function Precog(config) {
    *   {accountId: '23987123', grantId: '0d43eece-7abb-43bd-8385-e33bac78e145'}
    * );
    */
-  Precog.prototype.addGrantToAccount = function(info, success, failure) {
+  Precog.prototype.addGrantToAccount = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'accountId');
@@ -300,10 +296,9 @@ function Precog(config) {
     return PrecogHttp.post({
       url:      self.accountsUrl("accounts/" + info.accountId + "/grants/"),
       content:  {grantId: info.grantId},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Retrieves the plan that the specified account is on. The account is 
@@ -312,24 +307,23 @@ function Precog(config) {
    * @example
    * Precog.currentPlan({email: 'jdoe@foo.com', password: 'abc123'});
    */
-  Precog.prototype.currentPlan = function(account, success, failure) {
+  Precog.prototype.currentPlan = Util.addCallbacks(function(account) {
     var self = this;
 
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email, function(response) {
+    return self.lookupAccountId(account.email).then(function(response) {
       return PrecogHttp.get({
         basicAuth: {
           username: account.email,
           password: account.password
         },
-        url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
-        success:  Util.composef(success, Util.composef(Util.extractField('type'), Util.extractContent)),
-        failure:  Util.defFailure(failure)
+        url:     self.accountsUrl("accounts/" + response.accountId + "/plan"),
+        success: Util.composef(Util.extractField('type'), Util.extractContent)
       });
-    }, Util.defFailure(failure));
-  };
+    });
+  });
 
   /**
    * Changes the account's plan.
@@ -337,7 +331,7 @@ function Precog(config) {
    * @example
    * Precog.changePlan({email: 'jdoe@foo.com', password: 'abc123', plan: 'BRONZE'});
    */
-  Precog.prototype.changePlan = function(account, success, failure) {
+  Precog.prototype.changePlan = Util.addCallbacks(function(account) {
     var self = this;
 
     Util.requireField(account, 'email');
@@ -352,11 +346,10 @@ function Precog(config) {
         },
         url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
         content:  {type: account.plan},
-        success:  Util.defSuccess(success),
-        failure:  Util.defFailure(failure)
+        success:  Util.extractContent
       });
-    }, Util.defFailure(failure));
-  };
+    });
+  });
 
   /**
    * Delete's the account's plan, resetting it to the default plan on the system.
@@ -364,7 +357,7 @@ function Precog(config) {
    * @example
    * Precog.deletePlan({email: 'jdoe@foo.com', password: 'abc123'});
    */
-  Precog.prototype.deletePlan = function(account, success, failure) {
+  Precog.prototype.deletePlan = Util.addCallbacks(function(account) {
     var self = this;
 
     Util.requireField(account, 'email');
@@ -377,11 +370,10 @@ function Precog(config) {
           password: account.password
         },
         url:      self.accountsUrl("accounts/" + response.accountId + "/plan"),
-        success:  Util.composef(success, Util.composef(Util.extractField('type'), Util.extractContent)),
-        failure:  Util.defFailure(failure)
+        success:  Util.composef(Util.extractField('type'), Util.extractContent)
       });
-    }, Util.defFailure(failure));
-  };
+    });
+  });
 
   // ****************
   // *** SECURITY ***
@@ -401,9 +393,8 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.securityUrl("apikeys/"),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
-    });
+      success:  Util.extractContent
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -412,7 +403,7 @@ function Precog(config) {
    * @example
    * Precog.createApiKey(grants);
    */
-  Precog.prototype.createApiKey = function(grants, success, failure) {
+  Precog.prototype.createApiKey = Util.addCallbacks(function(grants) {
     var self = this;
 
     Util.requireParam(grants, 'grants');
@@ -422,10 +413,9 @@ function Precog(config) {
       url:      self.securityUrl("apikeys/"),
       content:  grants,
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Describes an existing API key.
@@ -433,7 +423,7 @@ function Precog(config) {
    * @example
    * Precog.describeApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
    */
-  Precog.prototype.describeApiKey = function(apiKey, success, failure) {
+  Precog.prototype.describeApiKey = Util.addCallbacks(function(apiKey) {
     var self = this;
 
     self.requireConfig('apiKey');
@@ -441,10 +431,9 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.securityUrl("apikeys/" + apiKey),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Deletes an existing API key.
@@ -452,7 +441,7 @@ function Precog(config) {
    * @example
    * Precog.deleteApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
    */
-  Precog.prototype.deleteApiKey = function(apiKey, success, failure) {
+  Precog.prototype.deleteApiKey = Util.addCallbacks(function(apiKey) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -461,10 +450,9 @@ function Precog(config) {
     return PrecogHttp.delete0({
       url:      self.securityUrl("apikeys/" + apiKey),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Retrieves the grants associated with an existing API key.
@@ -472,7 +460,7 @@ function Precog(config) {
    * @example
    * Precog.retrieveApiKeyGrants('475ae23d-f5f9-4ffc-b643-e805413d2233');
    */
-  Precog.prototype.retrieveApiKeyGrants = function(apiKey, success, failure) {
+  Precog.prototype.retrieveApiKeyGrants = Util.addCallbacks(function(apiKey) {
     var self = this;
 
     Util.requireParam(apiKey, 'apiKey');
@@ -481,10 +469,9 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.securityUrl("apikeys/" + apiKey + "/grants/"),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Adds a grant to an existing API key.
@@ -492,7 +479,7 @@ function Precog(config) {
    * @example
    * Precog.createApiKey({grant: grant, apiKey: apiKey});
    */
-  Precog.prototype.addGrantToApiKey = function(info, success, failure) {
+  Precog.prototype.addGrantToApiKey = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'grant');
@@ -504,10 +491,9 @@ function Precog(config) {
       url:      self.securityUrl("apikeys/" + info.apiKey + "/grants/"),
       content:  info.grant,
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Removes a grant from an existing API key.
@@ -518,7 +504,7 @@ function Precog(config) {
    *   grantId: '0b47db0d-ed14-4b56-831b-76b8bf66f976'
    * });
    */
-  Precog.prototype.removeGrantFromApiKey = function(info, success, failure) {
+  Precog.prototype.removeGrantFromApiKey = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'grantId');
@@ -529,10 +515,9 @@ function Precog(config) {
     return PrecogHttp.delete0({
       url:      self.securityUrl("apikeys/" + info.apiKey + "/grants/" + info.grantId),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Creates a new grant.
@@ -550,7 +535,7 @@ function Precog(config) {
    *   }]
    * });
    */
-  Precog.prototype.createGrant = function(grant, success, failure) {
+  Precog.prototype.createGrant = Util.addCallbacks(function(grant) {
     var self = this;
 
     Util.requireParam(grant, 'grant');
@@ -561,10 +546,9 @@ function Precog(config) {
       url:      self.securityUrl("grants/"),
       content:  grant,
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Describes an existing grant.
@@ -572,7 +556,7 @@ function Precog(config) {
    * @example
    * Precog.describeGrant('581c36a6-0e14-487e-8622-3a38b828b931');
    */
-  Precog.prototype.describeGrant = function(grantId, success, failure) {
+  Precog.prototype.describeGrant = Util.addCallbacks(function(grantId) {
     var self = this;
 
     Util.requireParam(grantId, 'grantId');
@@ -582,10 +566,9 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.securityUrl("grants/" + grantId),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Deletes an existing grant. In order for this operation to succeed,
@@ -594,7 +577,7 @@ function Precog(config) {
    * @example
    * Precog.deleteGrant('581c36a6-0e14-487e-8622-3a38b828b931');
    */
-  Precog.prototype.deleteGrant = function(grantId, success, failure) {
+  Precog.prototype.deleteGrant = Util.addCallbacks(function(grantId) {
     var self = this;
 
     Util.requireParam(grantId, 'grantId');
@@ -604,10 +587,9 @@ function Precog(config) {
     return PrecogHttp.delete0({
       url:      self.securityUrl("grants/" + grantId),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Lists the children of an existing grant.
@@ -615,7 +597,7 @@ function Precog(config) {
    * @example
    * Precog.listGrantChildren('581c36a6-0e14-487e-8622-3a38b828b931');
    */
-  Precog.prototype.listGrantChildren = function(grantId, success, failure) {
+  Precog.prototype.listGrantChildren = Util.addCallbacks(function(grantId) {
     var self = this;
 
     Util.requireParam(grantId, 'grantId');
@@ -625,10 +607,9 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.securityUrl("grants/" + grantId + "/children/"),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Lists the children of an existing grant.
@@ -639,7 +620,7 @@ function Precog(config) {
    *   childGrant: childGrant
    * });
    */
-  Precog.prototype.createGrantChild = function(info, success, failure) {
+  Precog.prototype.createGrantChild = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'parentGrantId');
@@ -651,10 +632,9 @@ function Precog(config) {
       url:      self.securityUrl("grants/" + info.parentGrantId + "/children/"),
       content:  info.childGrant,
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   // ****************
   // *** METADATA ***
@@ -666,7 +646,7 @@ function Precog(config) {
    * @example
    * Precog.getMetadata('/foo');
    */
-  Precog.prototype.getMetadata = function(path, success, failure) {
+  Precog.prototype.getMetadata = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -676,15 +656,14 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.metadataUrl("fs/" + path),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Legacy method (retrieves raw API results).
    */   
-  Precog.prototype._retrieveMetadata = function(path, success, failure) {
+  Precog.prototype._retrieveMetadata = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -694,10 +673,9 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.metadataUrl("fs/" + path),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   Precog.prototype._isEmulateData = function(path0) {
     Util.requireParam(path0, 'path');
@@ -754,7 +732,7 @@ function Precog(config) {
    * @example
    * Precog.listChildren('/foo');
    */
-  Precog.prototype.listChildren = function(path, success, failure) {
+  Precog.prototype.listChildren = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -770,8 +748,8 @@ function Precog(config) {
     }
      // END EMULATION
 
-    return this._retrieveMetadata(path).then(addExtraChildren).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    return this._retrieveMetadata(path).then(addExtraChildren);
+  });
 
   /**
    * Retrieves all descendants of the specified path.
@@ -779,7 +757,7 @@ function Precog(config) {
    * @example
    * Precog.listDescendants('/foo');
    */
-  Precog.prototype.listDescendants = function(path, success, failure) {
+  Precog.prototype.listDescendants = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -801,8 +779,8 @@ function Precog(config) {
       });
     }
 
-    return listDescendants0(path, '').then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    return listDescendants0(path, '');
+  });
 
   /**
    * Determines if the specified file exists.
@@ -810,7 +788,7 @@ function Precog(config) {
    * @example
    * Precog.existsFile('/foo/bar.json');
    */
-  Precog.prototype.existsFile = function(path, success, failure) {
+  Precog.prototype.existsFile = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -822,8 +800,8 @@ function Precog(config) {
 
     return self.listChildren(targetDir).then(function(children) {
       return Util.acontains(children, targetName);
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   // ************
   // *** DATA ***
@@ -836,7 +814,7 @@ function Precog(config) {
    * @example
    * Precog.uploadFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
    */
-  Precog.prototype.uploadFile = function(info, success, failure) {
+  Precog.prototype.uploadFile = Util.addCallbacks(function(info) {
     var self = this;
     var resolver;
 
@@ -908,13 +886,13 @@ function Precog(config) {
           });
         }).then(function() {
           return {versions: {head: fileNode.version}};
-        }).then(Util.safeCallback(success), Util.safeCallback(failure));
+        });
       } else {
         // The file is not a script, so we can't execute it, so just
         // report success:
         resolver = Vow.promise();
         resolver.fulfill({versions:{head: fileNode.version}});
-        return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
+        return resolver;
       }
 
       // END EMULATION
@@ -934,9 +912,9 @@ function Precog(config) {
           headers:  { 'Content-Type': info.type }
         }).then(function(v) { resolver.fulfill(v.content); });
       }).done();
-      return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
+      return resolver;
     }
-  };
+  });
 
   /**
    * Creates the specified file. The file must not already exist.
@@ -944,7 +922,7 @@ function Precog(config) {
    * @example
    * Precog.createFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
    */
-  Precog.prototype.createFile = function(info, success, failure) {
+  Precog.prototype.createFile = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'path');
@@ -955,8 +933,8 @@ function Precog(config) {
       if (!fileExists) {
         return self.uploadFile(info);
       } else Util.error('The file ' + info.path + ' already exists');
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   /**
    * Retrieves the contents of the specified file.
@@ -964,7 +942,7 @@ function Precog(config) {
    * @example
    * Precog.retrieveFile('/foo/bar.qrl');
    */
-  Precog.prototype.retrieveFile = function(path, success, failure) {
+  Precog.prototype.retrieveFile = Util.addCallbacks(function(path) {
     var self = this;
 
     // FIXME: EMULATION
@@ -976,16 +954,16 @@ function Precog(config) {
         type:    fileNode.type
       });
 
-      return resolver.then(Util.safeCallback(success), Util.safeCallback(failure)); // END EMULATION
+      return resolver; // END EMULATION
     } else {
       return self.execute({query: 'load("' + path + '")'}, function(results) {
         return {
           content: JSON.stringify(results),
           type:    'application/json'
         };
-      }).then(Util.safeCallback(success), Util.safeCallback(failure));
+      });
     }
-  };
+  });
 
   /**
    * Appends a JSON value to the specified file.
@@ -993,13 +971,13 @@ function Precog(config) {
    * @example
    * Precog.append({path: '/website/clicks.json', value: clickEvent});
    */
-  Precog.prototype.append = function(info, success, failure) {
+  Precog.prototype.append = Util.addCallbacks(function(info) {
     info.values = [info.value];
 
     delete info.value;
 
     return this.appendAll(info, success, failure);
-  };
+  });
 
   /**
    * Appends a collection of JSON values to the specified file.
@@ -1007,7 +985,7 @@ function Precog(config) {
    * @example
    * Precog.append({path: '/website/clicks.json', values: clickEvents});
    */
-  Precog.prototype.appendAll = function(info, success, failure) {
+  Precog.prototype.appendAll = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'value');
@@ -1030,10 +1008,9 @@ function Precog(config) {
                   ownerAccountId: info.ownerAccountId
                 },
       headers:  { 'Content-Type': 'application/json' },
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Deletes a specified file in the Precog file system.
@@ -1041,7 +1018,7 @@ function Precog(config) {
    * @example
    * Precog.delete0('/website/clicks.json');
    */
-  Precog.prototype.delete0 = function(path, success, failure) {
+  Precog.prototype.delete0 = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -1053,10 +1030,9 @@ function Precog(config) {
     return PrecogHttp.delete0({
       url:      self.dataUrl("async/fs/" + path),
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Deletes the specified directory and everything it contains.
@@ -1064,7 +1040,7 @@ function Precog(config) {
    * @example
    * Precog.deleteAll('/website/');
    */
-  Precog.prototype.deleteAll = function(path0, success, failure) {
+  Precog.prototype.deleteAll = Util.addCallbacks(function(path0) {
     var self = this;
 
     Util.requireParam(path0, 'path');
@@ -1082,8 +1058,8 @@ function Precog(config) {
       return Vow.all(Util.amap(absolutePaths, function(child) {
         return self.delete0(child);
       }));
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   /**
    * Copies a file from specified source to specified destination.
@@ -1091,7 +1067,7 @@ function Precog(config) {
    * @example
    * Precog.copyFile({source: '/foo/v1.qrl', dest: '/foo/v2.qrl'})
    */
-  Precog.prototype.copyFile = function(info, success, failure) {
+  Precog.prototype.copyFile = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'source');
@@ -1103,8 +1079,8 @@ function Precog(config) {
         type:     file.type,
         contents: file.content
       });
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   /**
    * Copies then deletes a file from specified source to specified
@@ -1113,7 +1089,7 @@ function Precog(config) {
    * @example
    * Precog.moveFile({source: '/foo/helloo.qrl', dest: '/foo/hello.qrl'})
    */
-  Precog.prototype.moveFile = function(info, success, failure) {
+  Precog.prototype.moveFile = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'source');
@@ -1121,8 +1097,8 @@ function Precog(config) {
 
     return self.copyFile(info, function() {
       return self.delete0(info.source);
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   /**
    * Copies then deletes a whole directory from specified source to
@@ -1131,7 +1107,7 @@ function Precog(config) {
    * @example
    * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
    */
-  Precog.prototype.moveDirectory = function(info, success, failure) {
+  Precog.prototype.moveDirectory = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'source');
@@ -1151,8 +1127,8 @@ function Precog(config) {
       return Vow.all(resolvers).then(function() {
         return self.deleteAll(info.source);
       });
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
-  };
+    });
+  });
 
   // ****************
   // *** ANALYSIS ***
@@ -1164,7 +1140,7 @@ function Precog(config) {
    * @example
    * Precog.executeFile({path: '/foo/script.qrl'});
    */
-  Precog.prototype.executeFile = function(info, success, failure) {
+  Precog.prototype.executeFile = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'path');
@@ -1185,7 +1161,7 @@ function Precog(config) {
         if (age < info.maxAge || info.maxStale && (age < (info.maxAge + info.maxStale))) {
           var resolver = Vow.promise();
           resolver.fulfill(cached.results);
-          return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
+          return resolver;
         }
       }
     }
@@ -1225,10 +1201,10 @@ function Precog(config) {
         Util.error('The file ' + info.path +
                    ' does not have type text/x-quirrel-script and therefore cannot be executed');
       }
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
+    });
 
     // END EMULATION
-  };
+  });
 
   /**
    * Executes the specified Quirrel query.
@@ -1238,7 +1214,7 @@ function Precog(config) {
    * @example
    * Precog.execute({query: 'count(//foo)'});
    */
-  Precog.prototype.execute = function(info, success, failure) {
+  Precog.prototype.execute = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'query');
@@ -1254,10 +1230,9 @@ function Precog(config) {
                   skip:   info.skip,
                   sortOn: info.sortOn
                 },
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Submits a Quirrel query and gives a job identifier back. Use
@@ -1266,7 +1241,7 @@ function Precog(config) {
    * @example
    * Precog.asyncQuery({query: '1 + 4'});
    */
-  Precog.prototype.asyncQuery = function(info, success, failure ) {
+  Precog.prototype.asyncQuery = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'query');
@@ -1286,10 +1261,9 @@ function Precog(config) {
                   prefixPath : info.prefixPath,
                   format     : info.format
                 },
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
+  });
 
   /**
    * Poll the status of the specified query job.
@@ -1297,7 +1271,7 @@ function Precog(config) {
    * @example
    * Precog.asyncQuery('8837ee1674fb478fb2ebb0b521eaa6ce');
    */
-  Precog.prototype.asyncQueryResults = function(jobId, success, failure) {
+  Precog.prototype.asyncQueryResults = Util.addCallbacks(function(jobId) {
     var self = this;
 
     Util.requireParam(jobId, 'jobId');
@@ -1305,9 +1279,7 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.analysisUrl("queries/") + jobId,
       query:    {apiKey: self.config.apiKey},
-      success:  Util.defSuccess(success),
-      failure:  Util.defFailure(failure)
+      success:  Util.extractContent
     });
-  };
-
+  });
 })(Precog);

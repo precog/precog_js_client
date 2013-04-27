@@ -100,7 +100,7 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success || Util.info;
+      o.success  = options.success || Util.debug;
       o.failure  = options.failure || Util.error;
       o.progress = options.progress || Util.debug;
       o.sync     = options.sync || false;
