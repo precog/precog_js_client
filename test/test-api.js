@@ -204,7 +204,7 @@ var testApi = {
     api$.then(function(api) {
       api.moveFile({
         source: originalUploadPath,
-        destination: uploadPath
+        dest: uploadPath
       }, function() {
         test.ok(true, 'Move file should return non-error HTTP code');
         test.done();
@@ -217,6 +217,9 @@ var testApi = {
   'listing children': retry(10, function(test) {
     api$.then(function(api) {
       api.listChildren(uploadPathRoot, function(children) {
+        console.log('CHILDREN:::::');
+        console.log(children);
+
         test.equal(children.length, 1, 'Children must have size');
         test.equal(children[0], 'test/', 'Child must equal uploaded file');
         test.done();
@@ -244,14 +247,17 @@ var testApi = {
   'create descendents': function(test) {
     api$.then(function(api) {
       // Create a nested directory of files
+      var vows = [];
       for(var i = 0; i < 10; i++) {
-        api.uploadFile({
+        vows.push(api.uploadFile({
           path: uploadPathRoot + '/' + i + '/' + i,
           contents: '{"a": ' + i + '}',
           type: 'application/json'
-        });
+        }));
       }
-      test.done();
+      Vow.all(vows).then(function() {
+        return test.done();
+      });
     });
   },
   'list descendents': retry(10, function(test) {
@@ -264,6 +270,8 @@ var testApi = {
   }),
   'delete directory': function(test) {
     api$.then(function(api) {
+      console.log('Deleting: ' + uploadPathRoot + '/0');
+
       api.deleteAll(uploadPathRoot + '/0', function() {
         api.listDescendants(uploadPathRoot, function(descendents) {
           test.equal(descendents.length, 18, 'Descendents must have smaller size');

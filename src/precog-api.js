@@ -724,6 +724,16 @@ function Precog(config) {
     return data;
   };
 
+  Precog.prototype._deleteEmulateData = function(path0) {
+    Util.requireParam(path0, 'path');
+
+    if (typeof localStorage !== 'undefined') {
+      var path = Util.sanitizePath(path0);
+
+      localStorage.removeItem('Precog.' + path);
+    }
+  };
+
   Precog.prototype._setEmulateData = function(path0, data) {
     var self = this;
 
@@ -1038,9 +1048,7 @@ function Precog(config) {
 
     self.requireConfig('apiKey');
 
-    if (typeof localStorage != 'undefined' && localStorage.getItem(path)) {
-      localStorage.removeItem(path);
-    }
+    self._deleteEmulateData(path);
 
     return PrecogHttp.delete0({
       url:      self.dataUrl("async/fs/" + path),
@@ -1056,21 +1064,24 @@ function Precog(config) {
    * @example
    * Precog.deleteAll('/website/');
    */
-  Precog.prototype.deleteAll = function(path, success, failure) {
+  Precog.prototype.deleteAll = function(path0, success, failure) {
     var self = this;
 
-    Util.requireParam(path, 'path');
+    Util.requireParam(path0, 'path');
 
     self.requireConfig('apiKey');
 
+    var path = Util.sanitizePath(path0 + '/');
+
     return self.listDescendants(path).then(function(children0) {
-      var children = children0.concat([path]);
+      // Convert relative paths to absolute paths:
+      var absolutePaths = (Util.amap(children0, function(child) {
+        return path + child;
+      })).concat([path]);
 
-      var futures = Util.amap(children, function(child) {
+      return Vow.all(Util.amap(absolutePaths, function(child) {
         return self.delete0(child);
-      });
-
-      return Vow.all(futures);
+      }));
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
@@ -1078,22 +1089,21 @@ function Precog(config) {
    * Copies a file from specified source to specified destination.
    *
    * @example
-   * Precog.copyFile({source: '/foo/v1.qrl', destination: '/foo/v2.qrl'})
+   * Precog.copyFile({source: '/foo/v1.qrl', dest: '/foo/v2.qrl'})
    */
-  Precog.prototype.copyFile = function(info, succcess, failure) {
+  Precog.prototype.copyFile = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'source');
-    Util.requireField(info, 'destination');
+    Util.requireField(info, 'dest');
 
     return self.retrieveFile(info.source, function(file) {
       return self.uploadFile({
-        path: info.destination,
-        // Hack: urgh, we need to know the type of locally stored files
-        type: file.type,
+        path:     info.dest,
+        type:     file.type,
         contents: file.content
-      }).then(Util.defSuccess(succcess));
-    }, Util.defFailure(failure));
+      });
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -1101,17 +1111,17 @@ function Precog(config) {
    * destination.
    *
    * @example
-   * Precog.moveFile({source: '/foo/helloo.qrl', destination: '/foo/hello.qrl'})
+   * Precog.moveFile({source: '/foo/helloo.qrl', dest: '/foo/hello.qrl'})
    */
   Precog.prototype.moveFile = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'source');
-    Util.requireField(info, 'destination');
+    Util.requireField(info, 'dest');
 
     return self.copyFile(info, function() {
-      return self.delete0(info.source).then(Util.defSuccess(success));
-    }, Util.defFailure(failure));
+      return self.delete0(info.source);
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -1119,13 +1129,13 @@ function Precog(config) {
    * specified destination.
    *
    * @example
-   * Precog.moveDirectory({source: '/foo/helloo', destination: '/foo/hello'})
+   * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
    */
   Precog.prototype.moveDirectory = function(info, success, failure) {
     var self = this;
 
     Util.requireField(info, 'source');
-    Util.requireField(info, 'destination');
+    Util.requireField(info, 'dest');
 
     return self.listDescendants(info.source, function(descendants) {
       var resolvers = [];
@@ -1134,14 +1144,14 @@ function Precog(config) {
       for(var i = 0; i < descendants.length; i++) {
         resolvers.push(self.copyFile({
           source: info.source + '/' + descendants[i],
-          destination: info.destination + '/' + descendants[i]
+          dest:   info.dest + '/' + descendants[i]
         }));
       }
 
       return Vow.all(resolvers).then(function() {
         return self.deleteAll(info.source);
-      }).then(Util.defSuccess(success));
-    }, Util.defFailure(failure));
+      });
+    }).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   // ****************
