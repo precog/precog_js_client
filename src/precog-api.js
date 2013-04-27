@@ -82,14 +82,52 @@ function Precog(config) {
       throw new Error(r.status + ' ' + r.statusText);
     };
   };
+  Util.sanitizePath = function(path) {
+    return path.replace(/\/+/g, '/');
+  };
+  Util.merge = function(o1, o2) {
+    var r, key, index;
+    if (o1 === undefined) return o2;
+    else if (o2 === undefined) return o1;
+    else if (o1 instanceof Array && o2 instanceof Array) {
+      r = [];
+      // Copy
+      for (index = 0; index < o1.length; index++) {
+        r.push(o1[index]);
+      }
+      // Merge
+      for (index = 0; index < o2.length; index++) {
+        if (r.length > index) {
+          r[index] = Util.merge(r[index], o2[index]);
+        } else {
+          r.push(o2[index]);
+        }
+      }
+    } else if (o1 instanceof Object && o2 instanceof Object) {
+      r = {};
+      // Copy:
+      for (key in o1) {
+        r[key] = o1[key];
+      }
+      // Merge:
+      for (key in o2) {
+        if (r[key] !== undefined) {
+          r[key] = Util.merge(r[key], o2[key]);
+        } else {
+          r[key] = o2[key];
+        }
+      }
+      return r;
+    } else {
+      return o2;
+    }
+  };
 
   Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
     Util.requireField(this.config, "analyticsService");
 
-    var fullpathDirty = this.config.analyticsService + "/" + 
-                        serviceName + "/v" + serviceVersion + "/" + (path || '');
-
-    return fullpathDirty;
+    return this.config.analyticsService + 
+           Util.sanitizePath("/" + serviceName + "/v" + serviceVersion + "/" + (path || ''));
   };
 
   Precog.prototype.accountsUrl = function(path) {
@@ -625,9 +663,9 @@ function Precog(config) {
    * Retrieves metadata for the specified path.
    *
    * @example
-   * Precog.retrieveMetadata('/foo');
+   * Precog.getMetadata('/foo');
    */
-  Precog.prototype.retrieveMetadata = function(path, success, failure) {
+  Precog.prototype.getMetadata = function(path, success, failure) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -643,27 +681,85 @@ function Precog(config) {
   };
 
   /**
+   * Legacy method (retrieves raw API results).
+   */   
+  Precog.prototype._retrieveMetadata = function(path, success, failure) {
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
+    self.requireConfig('apiKey');
+
+    return PrecogHttp.get({
+      url:      self.metadataUrl("fs/" + path),
+      query:    {apiKey: self.config.apiKey},
+      success:  Util.defSuccess(success),
+      failure:  Util.defFailure(failure)
+    });
+  };
+
+  Precog.prototype._isEmulateData = function(path0) {
+    Util.requireParam(path0, 'path');
+
+    if (typeof localStorage !== 'undefined') {
+      var path = Util.sanitizePath(path0);
+
+      return localStorage.getItem('Precog.' + path) != null;
+    }
+
+    return false;
+  };
+
+  Precog.prototype._getEmulateData = function(path0) {
+    Util.requireParam(path0, 'path');
+
+    var data = {};
+    if (typeof localStorage !== 'undefined') {
+      var path = Util.sanitizePath(path0);
+
+      data = JSON.parse(localStorage.getItem('Precog.' + path) || '{}');
+    }
+
+    return data;
+  };
+
+  Precog.prototype._setEmulateData = function(path0, data) {
+    var self = this;
+
+    Util.requireParam(path0, 'path');
+
+    if (typeof localStorage !== 'undefined') {
+      var path = Util.sanitizePath(path0);
+
+      var data0 = self._getEmulateData(path);
+
+      localStorage.setItem('Precog.' + path, JSON.stringify(Util.merge(data0, data)));
+    }
+  };
+
+  /**
    * Retrieves all children of the specified path.
    *
    * @example
    * Precog.listChildren('/foo');
    */
   Precog.prototype.listChildren = function(path, success, failure) {
+    var self = this;
+
     Util.requireParam(path, 'path');
 
-    var dirNode = {};
-    if (typeof localStorage != 'undefined') {
-      // FIXME: EMULATION
-      // Add extra children not stored in file system:
-      dirNode = JSON.parse(localStorage.getItem(path) || '{}');
-    }
+    // FIXME: EMULATION
+    // Get extra children not stored in file system:
+    var nodeData = self._getEmulateData(path);
 
-    var dirChildren = dirNode.children || [];
-    function success1(metadata) {
-      return metadata.children.concat(dirChildren); // END
-    }
+    var extraChildren = nodeData.children || [];
 
-    return this.retrieveMetadata(path).then(success1).then(Util.safeCallback(success), Util.safeCallback(failure));
+    function addExtraChildren(metadata) {
+      return metadata.children.concat(extraChildren);
+    }
+     // END EMULATION
+
+    return this._retrieveMetadata(path).then(addExtraChildren).then(Util.safeCallback(success), Util.safeCallback(failure));
   };
 
   /**
@@ -767,27 +863,24 @@ function Precog(config) {
 
     if (emulate) {
       // FIXME: EMULATION
-      var parentDirNode = JSON.parse(localStorage.getItem(targetDir) || '{}');
-      if (parentDirNode == null) parentDirNode = {};
+      var parentNode = self._getEmulateData(targetDir);
 
-      children = parentDirNode.children || [];
-
-      parentDirNode.children = children;
+      var children = parentNode.children || [];
 
       children.push(targetName);
 
-      // Keep track of children inside this node:
-      localStorage.setItem(targetDir, JSON.stringify(parentDirNode));
+      // Keep track of children inside parent node:
+      self._setEmulateData(targetDir, {children: children});
 
-      // Keep track of the contents of this file:
-      var fileNode = JSON.parse(localStorage.getItem(fullPath) || '{}');
+      // Keep track of the contents & type of this file:
+      var fileNode = self._getEmulateData(fullPath);
 
       fileNode.type     = info.type;
       fileNode.contents = info.contents;
       fileNode.version  = fileNode.version ? fileNode.version + 1 : 1;
       fileNode.lastModified = new Date().getMilliseconds();
 
-      localStorage.setItem(fullPath, JSON.stringify(fileNode));
+      self._setEmulateData(fullPath, fileNode);
 
       if (info.type === 'text/x-quirrel-script') {
         // The file is a script, immediately execute it:
@@ -863,13 +956,16 @@ function Precog(config) {
   Precog.prototype.retrieveFile = function(path, success, failure) {
     var self = this;
 
-    if (typeof localStorage != 'undefined' && localStorage.getItem(path)) {
-      // FIXME: EMULATION
-      var result = JSON.parse(localStorage.getItem(path));
+    // FIXME: EMULATION
+    if (self._isEmulateData(path)) {
+      var fileNode = self._getEmulateData(path);
       var resolver = Vow.promise();
-      resolver.fulfill({content: result.content, type: result.type});
+      resolver.fulfill({
+        content: fileNode.content, 
+        type:    fileNode.type
+      });
 
-      return resolver.then(Util.safeCallback(success), Util.safeCallback(failure)); // END
+      return resolver.then(Util.safeCallback(success), Util.safeCallback(failure)); // END EMULATION
     } else {
       return self.execute({query: 'load("' + path + '")'}, function(results) {
         return {
@@ -1063,11 +1159,13 @@ function Precog(config) {
     Util.requireField(info, 'path');
 
     // FIXME: EMULATION
-    if (typeof localStorage != 'undefined' && info.maxAge) {
+    if (self._isEmulateData(info.path) && info.maxAge) {
       // User wants to cache, see if there's a cached version:
-      var storedEntry = JSON.parse(localStorage.getItem(info.path));
+      var fileNode = self._getEmulateData(info.path);
 
-      if (storedEntry.cached) {
+      if (fileNode.cached) {
+        var cached = fileNode.cached;
+
         // There's a cached version, see if it's fresh enough:
         var now = (new Date()).getMilliseconds() / 1000;
 
@@ -1075,41 +1173,50 @@ function Precog(config) {
 
         if (age < info.maxAge || info.maxStale && (age < (info.maxAge + info.maxStale))) {
           var resolver = Vow.promise();
-          resolver.fulfill(storedEntry.cached.results);
+          resolver.fulfill(cached.results);
           return resolver.then(Util.safeCallback(success), Util.safeCallback(failure));
         }
       }
     }
-    // END
+    // END EMULATION
 
+    // FIXME: EMULATION
+
+    // Pull back the contents of the file:
     return self.retrieveFile(info.path).then(function(file) {
+      // See if the file is executable:
       if (file.type === 'text/x-quirrel-script') {
         var executeRequest = {
           query: file.contents
         };
 
+        // Execute the script:
         return self.execute(executeRequest).then(function(results) {
-          if (typeof localStorage != 'undefined') {
-            var storedEntry = JSON.parse(localStorage.getItem(info.path));
-
-            if (!storedEntry) storedEntry = {type: 'text/x-quirrel-script', contents: file.contents};
-
+          if (typeof localStorage !== 'undefined') {
             // If there are no errors, store the cached execution of the script:
             if (!results.errors || !results.errors.length) {
-              storedEntry.cached = {
+              var fileNode = self._getEmulateData(info.path);
+
+              fileNode.type     = 'text/x-quirrel-script';
+              fileNode.contents = file.contents;
+              fileNode.cached = {
                 results:   results,
                 timestamp: (new Date()).getMilliseconds() / 1000
               };
-            }
 
-            localStorage.setItem(info.path, JSON.stringify(storedEntry));
+              self._setEmulateData(info.path, fileNode);
+            }
           }
 
           return results;
         });
-      } else Util.error('The file ' + info.path +
-                        ' does not have type text/x-quirrel-script and therefore cannot be executed');
+      } else {
+        Util.error('The file ' + info.path +
+                   ' does not have type text/x-quirrel-script and therefore cannot be executed');
+      }
     }).then(Util.safeCallback(success), Util.safeCallback(failure));
+
+    // END EMULATION
   };
 
   /**

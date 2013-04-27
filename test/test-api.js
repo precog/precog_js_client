@@ -225,7 +225,7 @@ var testApi = {
   }),
   'metadata': function(test) {
     api$.then(function(api) {
-      api.retrieveMetadata(uploadPath, function(metadata) {
+      api._retrieveMetadata(uploadPath, function(metadata) {
         test.notEqual(metadata.size, undefined, 'Metadata must have size');
         test.notEqual(metadata.children, undefined, 'Metadata must have children');
         test.notEqual(metadata.structure, undefined, 'Metadata must have structure');
