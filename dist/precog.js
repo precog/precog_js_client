@@ -2568,8 +2568,6 @@
           return path + child;
         })).concat([path]);
   
-        console.log('Deleting: ' + absolutePaths);
-  
         return Vow.all(Util.amap(absolutePaths, function(child) {
           return self.delete0(child);
         }));
