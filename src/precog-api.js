@@ -216,7 +216,7 @@ function Precog(config) {
 
     Util.requireParam(email, 'email');
 
-    return self.lookupAccountId(email, function(accountId) {
+    return self.lookupAccountId(email).then(function(accountId) {
       return PrecogHttp.post({
         url:      self.accountsUrl("accounts") + "/" + accountId + "/password/reset",
         content:  {email: email},
@@ -267,7 +267,7 @@ function Precog(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email, function(response) {
+    return self.lookupAccountId(account.email).then(function(response) {
       return PrecogHttp.get({
         basicAuth: {
           username: account.email,
@@ -338,7 +338,7 @@ function Precog(config) {
     Util.requireField(account, 'password');
     Util.requireField(account, 'plan');
 
-    return self.lookupAccountId(account.email, function(response) {
+    return self.lookupAccountId(account.email).then(function(response) {
       return PrecogHttp.put({
         basicAuth: {
           username: account.email,
@@ -363,7 +363,7 @@ function Precog(config) {
     Util.requireField(account, 'email');
     Util.requireField(account, 'password');
 
-    return self.lookupAccountId(account.email, function(response) {
+    return self.lookupAccountId(account.email).then(function(response) {
       return PrecogHttp.delete0({
         basicAuth: {
           username: account.email,
@@ -394,7 +394,7 @@ function Precog(config) {
       url:      self.securityUrl("apikeys/"),
       query:    {apiKey: self.config.apiKey},
       success:  Util.extractContent
-    }).then(Util.safeCallback(success), Util.safeCallback(failure));
+    }).then(Util.safeCallback(success), failure);
   };
 
   /**
@@ -950,19 +950,20 @@ function Precog(config) {
       var fileNode = self._getEmulateData(path);
       var resolver = Vow.promise();
       resolver.fulfill({
-        content: fileNode.content, 
-        type:    fileNode.type
+        contents: fileNode.contents, 
+        type:     fileNode.type
       });
 
-      return resolver; // END EMULATION
+      return resolver;
     } else {
-      return self.execute({query: 'load("' + path + '")'}, function(results) {
+      return self.execute({query: 'load("' + path + '")'}).then(function(results) {
         return {
-          content: JSON.stringify(results),
+          contents: JSON.stringify(results.data),
           type:    'application/json'
         };
       });
     }
+    // END EMULATION
   });
 
   /**
@@ -1073,11 +1074,11 @@ function Precog(config) {
     Util.requireField(info, 'source');
     Util.requireField(info, 'dest');
 
-    return self.retrieveFile(info.source, function(file) {
+    return self.retrieveFile(info.source).then(function(file) {
       return self.uploadFile({
         path:     info.dest,
         type:     file.type,
-        contents: file.content
+        contents: file.contents
       });
     });
   });
@@ -1095,7 +1096,7 @@ function Precog(config) {
     Util.requireField(info, 'source');
     Util.requireField(info, 'dest');
 
-    return self.copyFile(info, function() {
+    return self.copyFile(info).then(function() {
       return self.delete0(info.source);
     });
   });
@@ -1113,7 +1114,7 @@ function Precog(config) {
     Util.requireField(info, 'source');
     Util.requireField(info, 'dest');
 
-    return self.listDescendants(info.source, function(descendants) {
+    return self.listDescendants(info.source).then(function(descendants) {
       var resolvers = [];
 
       // Copy each file
@@ -1209,6 +1210,9 @@ function Precog(config) {
   /**
    * Executes the specified Quirrel query.
    *
+   * Optionally, a 'path' field may be specified which uses that path as
+   * the base path.
+   *
    * @return {"data": ..., "errors": ..., "warnings": ...}
    *
    * @example
@@ -1222,13 +1226,14 @@ function Precog(config) {
     self.requireConfig('apiKey');
 
     return PrecogHttp.get({
-      url:      self.analysisUrl("fs/" + info.path),
+      url:      self.analysisUrl("fs/" + (info.path || '')),
       query:    {
                   apiKey: self.config.apiKey, 
                   q:      info.query,
                   limit:  info.limit,
                   skip:   info.skip,
-                  sortOn: info.sortOn
+                  sortOn: info.sortOn,
+                  format: 'detailed'
                 },
       success:  Util.extractContent
     });
@@ -1252,7 +1257,7 @@ function Precog(config) {
                   apiKey     : self.config.apiKey,
                   q          : info.query,
                   limit      : info.limit,
-                  basePath   : info.basePath,
+                  basePath   : info.path,
                   skip       : info.skip,
                   order      : info.order,
                   sortOn     : info.sortOn,

@@ -20,8 +20,10 @@ var uploadPath;
 
 var account$ = anonApi.createAccount(user).then(function(account) {
   uploadPathRoot = '/' + account.accountId;
+
   originalUploadPath = uploadPathRoot + '/' + 'original';
-  uploadPath = uploadPathRoot + '/' + 'test';
+  uploadPath         = uploadPathRoot + '/' + 'test';
+
   return anonApi.describeAccount(user);
 });
 
@@ -231,6 +233,20 @@ var testApi = asyncModule({
       });
     });
   },
+  'retrieve data file': function(test) {
+    return api$.then(function(api) {
+      return api.retrieveFile(originalUploadPath).then(function(file) {
+        console.log('file:');
+        console.log(file);
+
+        test.deepEqual(
+          JSON.parse(file.contents), 
+          JSON.parse('[{"name": "John", "email": "john@precog.com"},{"name": "Brian", "email": "brian@precog.com"}]'),
+          'Retrieved contents of a file must be equal to the original uploaded file'
+        );
+      });
+    });
+  },
   'move file': function(test) {
     return api$.then(function(api) {
       return api.moveFile({
@@ -268,7 +284,7 @@ var testApi = asyncModule({
       });
     });
   },
-  'create create descendants': function(test) {
+  'create descendants': function(test) {
     return api$.then(function(api) {
       // Create a nested directory of files
       var vows = [];
@@ -303,11 +319,10 @@ var testApi = asyncModule({
   'execute simple': function(test) {
     return api$.then(function(api) {
       return api.execute({
-        path: "",
         query: "1 + 2"
       });
     }).then(function(results) {
-      test.deepEqual(results, [3], '1 + 2 should return 3');
+      test.deepEqual(results.data, [3], '1 + 2 should return 3');
     });
   },
   'query async': function(test) {
