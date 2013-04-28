@@ -1803,8 +1803,6 @@
       Util.requireField(account, 'password');
   
       return self.lookupAccountId(account.email).then(function(response) {
-        console.log('Looked up account ' + account.email + ' to find ' + JSON.stringify(response));
-  
         return PrecogHttp.get({
           basicAuth: {
             username: account.email,
@@ -1812,10 +1810,6 @@
           },
           url:     self.accountsUrl("accounts/" + response.accountId + "/plan"),
           success: Util.composef(Util.extractField('type'), Util.extractContent)
-        }).then(function(result) {
-          console.log('Found account for ' + account.email + ': ' + JSON.stringify(result));
-  
-          return result;
         });
       });
     });

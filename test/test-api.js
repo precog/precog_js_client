@@ -179,7 +179,7 @@ var testApi = asyncModule({
   },
   'create API key': function(test) {
     return api$.then(function(api) {
-      api.createApiKey({
+      return api.createApiKey({
         grants: []
       }).then(function(created) {
         state.created = created;
@@ -190,7 +190,7 @@ var testApi = asyncModule({
   },
   'list API keys': function(test) {
     return api$.then(function(api) {
-      api.listApiKeys(function(list) {
+      return api.listApiKeys(function(list) {
         test.equal(list.length, 1, 'One API key must have been created');
         test.equal(state.created.apiKey, list[0].apiKey, 'Listed key must be API key that was just created');
       });
@@ -198,7 +198,7 @@ var testApi = asyncModule({
   },
   'delete API key': function(test) {
     return api$.then(function(api) {
-      api.deleteApiKey(state.created.apiKey).then(function(result) {
+      return api.deleteApiKey(state.created.apiKey).then(function(result) {
         test.ok(true, 'Delete API key should return non-error HTTP code');
       });
     });
@@ -313,7 +313,7 @@ var testApi = asyncModule({
   'query async': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
-        api.asyncQuery({
+        return api.asyncQuery({
           query: "1 + 2"
         }).then(function(query) {
           state.query = query;
@@ -352,7 +352,7 @@ var testApi = asyncModule({
   'add grant to API key': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
-        api.addGrantToApiKey({
+        return api.addGrantToApiKey({
           grant: state.grant,
           apiKey: account.apiKey
         }).then(function(added) {
@@ -393,7 +393,7 @@ var testApi = asyncModule({
   'remove grant from API key': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
-        api.removeGrantFromApiKey({
+        return api.removeGrantFromApiKey({
           grantId: state.grant.grantId,
           apiKey: account.apiKey
         }).then(function(removed) {
