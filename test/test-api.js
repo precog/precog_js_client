@@ -213,7 +213,7 @@ var testApi = asyncModule({
       });
     });
   },
-  'upload file': function(test) {
+  'upload data file': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
         return api.uploadFile({
@@ -293,7 +293,7 @@ var testApi = asyncModule({
   'list descendants': function(test) {
     return api$.then(function(api) {
       return api.listDescendants(uploadPathRoot).then(function(descendents) {
-        test.equal(descendents.length, 20, 'Descendents must have size');
+        test.equal(descendents.length, 20, 'Descendants must have size');
       });
     });
   },
@@ -301,8 +301,27 @@ var testApi = asyncModule({
     return api$.then(function(api) {
       return api.deleteAll(uploadPathRoot + '/0').then(function() {
         return api.listDescendants(uploadPathRoot).then(function(descendents) {
-          test.equal(descendents.length, 18, 'Descendents must have smaller size');
+          test.equal(descendents.length, 18, 'Descendants must have smaller size');
         });
+      });
+    });
+  },
+  'upload script': function(test) {
+    return api$.then(function(api) {
+      return api.uploadFile({
+        path:     uploadPathRoot + '/script.qrl',
+        contents: '1 + 1',
+        type:     'text/x-quirrel-script'
+      }).then(function() {
+        test.ok(true, 'Script was uploaded successfully');
+      });
+    });
+  },
+  'retrieve uploaded script': function(test) {
+    return api$.then(function(api) {
+      return api.retrieveFile(uploadPathRoot + '/script.qrl').then(function(file) {
+        test.equal(file.contents, '1 + 1', 'Downloaded script must equal uploaded script');
+        test.equal(file.type, 'text/x-quirrel-script', 'Downloaded script must have uploaded mime type');
       });
     });
   },
@@ -318,7 +337,7 @@ var testApi = asyncModule({
   'query async': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
-        return api.asyncQuery({
+        return api._asyncQuery({
           query: "1 + 2"
         }).then(function(query) {
           state.query = query;
@@ -329,7 +348,7 @@ var testApi = asyncModule({
   },
   'async results': function(test) {
     return api$.then(function(api) {
-      return api.asyncQueryResults(state.query.jobId).then(function(results) {
+      return api._asyncQueryResults(state.query.jobId).then(function(results) {
         test.equal(results.errors.length, 0, 'Errors must be empty');
         test.equal(results.warnings.length, 0, 'Warnings must be empty');
         test.deepEqual(results.data, [3], 'Data must only contain three');

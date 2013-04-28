@@ -81,9 +81,10 @@ function PrecogHttp(options) {
     var log = function(type, options) {
       return function(v) {
         if (typeof console !== 'undefined') {
-          var logger = console[type] || console.log;
-          logger(options.method + ' ' + options.url);
-          logger(v);
+          var logger = console[type] || console.info;
+
+          logger.call(console, options.method + ' ' + options.url);
+          logger.call(console, v);
         }
         if (type !== 'error') return v;
       };

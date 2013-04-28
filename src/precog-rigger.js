@@ -23,6 +23,22 @@
 
   if (typeof window !== 'undefined') {
     //= ext/sessionstorage.1.4.js
+  } else {
+    var storage = {};
+
+    localStorage = {
+      setItem: function(key, value) {
+        storage[key] = value;
+      },
+
+      getItem: function(key) {
+        return storage[key];
+      },
+
+      removeItem: function(key) {
+        delete storage[key];
+      }
+    };
   }
 
   //= ext/vow.js

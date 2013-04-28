@@ -683,7 +683,11 @@ function Precog(config) {
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      return localStorage.getItem('Precog.' + path) != null;
+      var isEmulation = localStorage.getItem('Precog.' + path) != null;
+
+      console.log('is emulation for ' + path + ': ' + isEmulation);
+
+      return isEmulation;
     }
 
     return false;
@@ -697,6 +701,8 @@ function Precog(config) {
       var path = Util.sanitizePath(path0);
 
       data = JSON.parse(localStorage.getItem('Precog.' + path) || '{}');
+    } else {
+      if (console && console.error) console.error('Missing local storage!');
     }
 
     return data;
@@ -709,6 +715,8 @@ function Precog(config) {
       var path = Util.sanitizePath(path0);
 
       localStorage.removeItem('Precog.' + path);
+    } else {
+      if (console && console.error) console.error('Missing local storage!');
     }
   };
 
@@ -723,6 +731,8 @@ function Precog(config) {
       var data0 = self._getEmulateData(path);
 
       localStorage.setItem('Precog.' + path, JSON.stringify(Util.merge(data0, data)));
+    } else {
+      if (console && console.error) console.error('Missing local storage!');
     }
   };
 
@@ -871,6 +881,9 @@ function Precog(config) {
 
       self._setEmulateData(fullPath, fileNode);
 
+      console.log('emulated data for path ' + fullPath);
+      console.log(self._getEmulateData(fullPath));
+
       if (info.type === 'text/x-quirrel-script') {
         // The file is a script, immediately execute it:
         return self.executeFile({
@@ -879,10 +892,11 @@ function Precog(config) {
           // Take the data, and upload it to the file system.
           var data = results.data;
 
-          return uploadFile({
+          return self.uploadFile({
             path:     fullPath,
             type:     'application/json',
-            contents: data
+            contents: data,
+            saveEmulation: true // Don't delete the emulation data
           });
         }).then(function() {
           return {versions: {head: fileNode.version}};
@@ -898,7 +912,8 @@ function Precog(config) {
       // END EMULATION
     } else {
       resolver = Vow.promise();
-      self.delete0(fullPath).then(function() {
+
+      var doUpload = function() {
         return PrecogHttp.post({
           url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
           content:  info.contents,
@@ -911,7 +926,11 @@ function Precog(config) {
           },
           headers:  { 'Content-Type': info.type }
         }).then(function(v) { resolver.fulfill(v.content); });
-      }).done();
+      };
+      
+      if (info.saveEmulation) doUpload();
+      else self.delete0(fullPath).then(doUpload).done();
+
       return resolver;
     }
   });
@@ -944,6 +963,8 @@ function Precog(config) {
    */
   Precog.prototype.retrieveFile = Util.addCallbacks(function(path) {
     var self = this;
+
+    Util.requireParam(path, 'path');
 
     // FIXME: EMULATION
     if (self._isEmulateData(path)) {
@@ -1244,9 +1265,9 @@ function Precog(config) {
    * asyncQueryResults to poll for results.
    *
    * @example
-   * Precog.asyncQuery({query: '1 + 4'});
+   * Precog._asyncQuery({query: '1 + 4'});
    */
-  Precog.prototype.asyncQuery = Util.addCallbacks(function(info) {
+  Precog.prototype._asyncQuery = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'query');
@@ -1274,9 +1295,9 @@ function Precog(config) {
    * Poll the status of the specified query job.
    *
    * @example
-   * Precog.asyncQuery('8837ee1674fb478fb2ebb0b521eaa6ce');
+   * Precog._asyncQueryResults('8837ee1674fb478fb2ebb0b521eaa6ce');
    */
-  Precog.prototype.asyncQueryResults = Util.addCallbacks(function(jobId) {
+  Precog.prototype._asyncQueryResults = Util.addCallbacks(function(jobId) {
     var self = this;
 
     Util.requireParam(jobId, 'jobId');
