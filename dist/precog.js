@@ -1603,6 +1603,7 @@
             r.push(o2[index]);
           }
         }
+        return r;
       } else if (o1 instanceof Object && o2 instanceof Object) {
         r = {};
         // Copy:
@@ -2185,11 +2186,7 @@
       if (typeof localStorage !== 'undefined') {
         var path = Util.sanitizePath(path0);
   
-        var isEmulation = localStorage.getItem('Precog.' + path) != null;
-  
-        console.log('is emulation for ' + path + ': ' + isEmulation);
-  
-        return isEmulation;
+        return localStorage.getItem('Precog.' + path) != null;
       }
   
       return false;
@@ -2232,7 +2229,9 @@
   
         var data0 = self._getEmulateData(path);
   
-        localStorage.setItem('Precog.' + path, JSON.stringify(Util.merge(data0, data)));
+        var merged = Util.merge(data0, data);
+  
+        localStorage.setItem('Precog.' + path, JSON.stringify(merged));
       } else {
         if (console && console.error) console.error('Missing local storage!');
       }
@@ -2379,12 +2378,9 @@
         fileNode.type     = info.type;
         fileNode.contents = info.contents;
         fileNode.version  = fileNode.version ? fileNode.version + 1 : 1;
-        fileNode.lastModified = new Date().getMilliseconds();
+        fileNode.lastModified = new Date().getTime();
   
         self._setEmulateData(fullPath, fileNode);
-  
-        console.log('emulated data for path ' + fullPath);
-        console.log(self._getEmulateData(fullPath));
   
         if (info.type === 'text/x-quirrel-script') {
           // The file is a script, immediately execute it:
@@ -2392,12 +2388,10 @@
             path: fullPath
           }).then(function(results) {
             // Take the data, and upload it to the file system.
-            var data = results.data;
-  
             return self.uploadFile({
               path:     fullPath,
               type:     'application/json',
-              contents: data,
+              contents: results.data,
               saveEmulation: true // Don't delete the emulation data
             });
           }).then(function() {
@@ -2678,7 +2672,7 @@
           var cached = fileNode.cached;
   
           // There's a cached version, see if it's fresh enough:
-          var now = (new Date()).getMilliseconds() / 1000;
+          var now = (new Date()).getTime() / 1000;
   
           var age = now - cached.timestamp;
   
@@ -2708,11 +2702,9 @@
               if (!results.errors || !results.errors.length) {
                 var fileNode = self._getEmulateData(info.path);
   
-                fileNode.type     = 'text/x-quirrel-script';
-                fileNode.contents = file.contents;
                 fileNode.cached = {
                   results:   results,
-                  timestamp: (new Date()).getMilliseconds() / 1000
+                  timestamp: (new Date()).getTime() / 1000
                 };
   
                 self._setEmulateData(info.path, fileNode);

@@ -325,6 +325,20 @@ var testApi = asyncModule({
       });
     });
   },
+  'freshly execute uploaded script': function(test) {
+    return api$.then(function(api) {
+      return api.executeFile({path: uploadPathRoot + '/script.qrl'}).then(function(results) {
+        test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
+      });
+    });
+  },
+  'retrieved cached execution of script': function(test) {
+    return api$.then(function(api) {
+      return api.executeFile({path: uploadPathRoot + '/script.qrl', maxAge: 999999, maxStale: 999999}).then(function(results) {
+        test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
+      });
+    });
+  },
   'execute simple': function(test) {
     return api$.then(function(api) {
       return api.execute({
