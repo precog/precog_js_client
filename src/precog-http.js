@@ -77,22 +77,18 @@ function PrecogHttp(options) {
     return headers;
   };
 
-  Util.info = function(v) {
-    if(typeof console !== 'undefined') console.info ? console.info(v) : console.log(v);
-    return v;
-  };
-
-  Util.error = function(v) {
-    if(typeof console !== 'undefined') console.error ? console.error(v) : console.log(v);
-    return v;
-  };
-
-  Util.debug = function(v) {
-    if(typeof console !== 'undefined') console.debug ? console.debug(v) : console.log(v);
-    return v;
-  };
-
   Util.defopts = function(f) {
+    var log = function(type, options) {
+      return function(v) {
+        if (typeof console !== 'undefined') {
+          var logger = console[type] || console.log;
+          logger(options.method + ' ' + options.url);
+          logger(v);
+        }
+        if (type !== 'error') return v;
+      };
+    };
+
     return function(options) {
       var o = {};
 
@@ -100,9 +96,9 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success || Util.debug;
-      o.failure  = options.failure || Util.error;
-      o.progress = options.progress || Util.debug;
+      o.success  = options.success || log('debug', o);
+      o.failure  = options.failure || log('error', o);
+      o.progress = options.progress || log('debug', o);
       o.sync     = options.sync || false;
 
       if (options.basicAuth) {

@@ -133,8 +133,6 @@ var testApi = asyncModule({
     var promise = Vow.promise();
 
     anonApi.currentPlan({email: 'no$@"na1nemail!!!xyz+a', password: '+'}).then(function(plan) {
-      console.log('Plan for bad email: ' + JSON.stringify(plan));
-
       promise.reject('Bad email and password should not trigger a valid HTTP response');
     }, function(error) {
       test.ok(true, 'Bad email and password should return an error HTTP response');
@@ -236,9 +234,6 @@ var testApi = asyncModule({
   'retrieve data file': function(test) {
     return api$.then(function(api) {
       return api.retrieveFile(originalUploadPath).then(function(file) {
-        console.log('file:');
-        console.log(file);
-
         test.deepEqual(
           JSON.parse(file.contents), 
           JSON.parse('[{"name": "John", "email": "john@precog.com"},{"name": "Brian", "email": "brian@precog.com"}]'),
@@ -260,9 +255,6 @@ var testApi = asyncModule({
   'listing children': function(test) {
     return api$.then(function(api) {
       return api.listChildren(uploadPathRoot).then(function(children) {
-        console.log('CHILDREN:::::');
-        console.log(children);
-
         test.equal(children.length, 1, 'Children must have size');
         test.equal(children[0], 'test/', 'Child must equal uploaded file');
       });
@@ -307,8 +299,6 @@ var testApi = asyncModule({
   },
   'delete directory': function(test) {
     return api$.then(function(api) {
-      console.log('Deleting: ' + uploadPathRoot + '/0');
-
       return api.deleteAll(uploadPathRoot + '/0').then(function() {
         return api.listDescendants(uploadPathRoot).then(function(descendents) {
           test.equal(descendents.length, 18, 'Descendents must have smaller size');
