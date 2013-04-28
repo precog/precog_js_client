@@ -31,14 +31,17 @@ var precog = require('precog');
 ## Getting Started
 
 1. Create a new Precog API by specifying your API key.
+
     ```
     var api = new Precog({"apiKey": "[MY API KEY]"});
     ```
 2. Upload or stream some JSON data into a subdirectory of your base path. Your base path starts with your Precog account ID.
+
     ```
     api.append({path: '/[MY ACCOUNT ID]/test', value: {age: 29, gender: 'male'}});
     ```
 3. Query your JSON data.
+
     ```
     api.execute({query: 'count(//[MY ACCOUNT ID]/test)'});
     ```
