@@ -1168,16 +1168,10 @@ function Precog(config) {
     var path = Util.sanitizePath(path0);
 
     return self.listDescendants(path).then(function(descendants) {
-      console.log('DELETING RELATIVE::::');
-      console.log(descendants);
-
       // Convert relative paths to absolute paths:
       var absolutePaths = (Util.amap(descendants, function(child) {
         return Util.sanitizePath(path + '/' + child);
       })).concat([path]);
-
-      console.log('DELETING ABSOLUTE::::');
-      console.log(absolutePaths);
 
       return Vow.all(Util.amap(absolutePaths, function(child) {
         return self.delete0(child);
