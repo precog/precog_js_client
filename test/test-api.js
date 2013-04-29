@@ -256,7 +256,7 @@ var testApi = asyncModule({
     return api$.then(function(api) {
       return api.listChildren(uploadPathRoot).then(function(children) {
         test.equal(children.length, 1, 'Children must have size');
-        test.equal(children[0], 'test/', 'Child must equal uploaded file');
+        test.deepEqual(children[0], {type: 'file', name: 'test'}, 'Child must equal uploaded file');
       });
     });
   },

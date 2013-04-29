@@ -2326,7 +2326,7 @@
           var flattened = [];
   
           for (var i = 0; i < childNames.length; i++) {
-            var name = childNames[i];
+            var name = Util.removeTrailingSlash(childNames[i]);
   
             for (var j = 0; j < childTypes.length; j++) {
               var type = childTypes[j];
@@ -2546,9 +2546,9 @@
      * Retrieves the contents of the specified file.
      *
      * @example
-     * Precog.retrieveFile('/foo/bar.qrl');
+     * Precog.getFile('/foo/bar.qrl');
      */
-    Precog.prototype.retrieveFile = Util.addCallbacks(function(path) {
+    Precog.prototype.getFile = Util.addCallbacks(function(path) {
       var self = this;
   
       Util.requireParam(path, 'path');
@@ -2682,7 +2682,7 @@
       Util.requireField(info, 'source');
       Util.requireField(info, 'dest');
   
-      return self.retrieveFile(info.source).then(function(file) {
+      return self.getFile(info.source).then(function(file) {
         return self.uploadFile({
           path:     info.dest,
           type:     file.type,
@@ -2782,7 +2782,7 @@
       // FIXME: EMULATION
   
       // Pull back the contents of the file:
-      return self.retrieveFile(info.path).then(function(file) {
+      return self.getFile(info.path).then(function(file) {
         // See if the file is executable:
         if (file.type === 'text/x-quirrel-script') {
           var executeRequest = {

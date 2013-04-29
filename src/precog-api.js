@@ -824,7 +824,7 @@ function Precog(config) {
         var flattened = [];
 
         for (var i = 0; i < childNames.length; i++) {
-          var name = childNames[i];
+          var name = Util.removeTrailingSlash(childNames[i]);
 
           for (var j = 0; j < childTypes.length; j++) {
             var type = childTypes[j];
