@@ -84,8 +84,10 @@ function Precog(config) {
     return path.replace(/\/+/g, '/');
   };
   Util.merge = function(o1, o2) {
-    var key, index;
-    if (o1 instanceof Array && o2 instanceof Array) {
+    var r, key, index;
+    if (o1 === undefined) return o1;
+    else if (o2 === undefined) return o1;
+    else if (o1 instanceof Array && o2 instanceof Array) {
       r = [];
       // Copy
       for (index = 0; index < o1.length; index++) {
@@ -704,11 +706,7 @@ function Precog(config) {
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      var data0 = self._getEmulateData(path);
-
-      var merged = Util.merge(data0, data);
-
-      localStorage.setItem('Precog.' + path, JSON.stringify(merged));
+      localStorage.setItem('Precog.' + path, data);
     } else {
       if (console && console.error) console.error('Missing local storage!');
     }
@@ -965,12 +963,11 @@ function Precog(config) {
       // FIXME: EMULATION
       var parentNode = self._getEmulateData(targetDir);
 
-      var children = parentNode.children || [];
-
-      children.push(targetName);
+      parentNode.children = parentNode.children || [];
+      parentNode.children.push(targetName);
 
       // Keep track of children inside parent node:
-      self._setEmulateData(targetDir, {children: children});
+      self._setEmulateData(targetDir, parentNode);
 
       // Keep track of the contents & type of this file:
       var fileNode = self._getEmulateData(fullPath);
