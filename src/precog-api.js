@@ -849,13 +849,16 @@ function Precog(config) {
    * @example
    * Precog.listDescendants('/foo');
    */
-  Precog.prototype.listDescendants = Util.addCallbacks(function(path) {
+  Precog.prototype.listDescendants = Util.addCallbacks(function(path0) {
     var self = this;
 
-    Util.requireParam(path, 'path');
+    Util.requireParam(path0, 'path');
 
-    function listDescendants0(root) {
+    var path = Util.sanitizePath(path0 + '/');
+
+    function listDescendants0(root, prefix) {
       return self.listChildren(root).then(function(children) {
+
         var absolutePaths0 = Util.amap(children, function(child) {
           if (child.name === '/' || child.name === '') Util.error('Infinite recursion');
 
@@ -870,15 +873,22 @@ function Precog(config) {
           }
         });
 
-        var futures = Util.amap(absolutePaths, listDescendants0);
+        var relativePaths = Util.amap(absolutePaths, function(absolute) {
+          // Always return path relative to prefix:
+          return absolute.substr(prefix.length);
+        });
+
+        var futures = Util.amap(absolutePaths, function(absolute) {
+          return listDescendants0(absolute, prefix);
+        });
 
         return Vow.all(futures).then(function(arrays) {          
-          return [].concat.apply(absolutePaths, arrays);
+          return [].concat.apply(relativePaths, arrays);
         });
       });
     }
 
-    return listDescendants0(path);
+    return listDescendants0(path, path);
   });
 
   /**
@@ -1158,10 +1168,16 @@ function Precog(config) {
     var path = Util.sanitizePath(path0);
 
     return self.listDescendants(path).then(function(descendants) {
+      console.log('DELETING RELATIVE::::');
+      console.log(descendants);
+
       // Convert relative paths to absolute paths:
       var absolutePaths = (Util.amap(descendants, function(child) {
         return Util.sanitizePath(path + '/' + child);
       })).concat([path]);
+
+      console.log('DELETING ABSOLUTE::::');
+      console.log(absolutePaths);
 
       return Vow.all(Util.amap(absolutePaths, function(child) {
         return self.delete0(child);

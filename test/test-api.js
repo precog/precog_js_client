@@ -301,6 +301,8 @@ var testApi = asyncModule({
     return api$.then(function(api) {
       return api.deleteAll(uploadPathRoot + '/0').then(function() {
         return api.listDescendants(uploadPathRoot).then(function(descendants) {
+          console.log('DESCENDANTS::::');
+          console.log(descendants);
           test.equal(descendants.length, 18, 'Descendants must have smaller size');
         });
       });
