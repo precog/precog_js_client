@@ -233,7 +233,7 @@ var testApi = asyncModule({
   },
   'retrieve data file': function(test) {
     return api$.then(function(api) {
-      return api.retrieveFile(originalUploadPath).then(function(file) {
+      return api.getFile(originalUploadPath).then(function(file) {
         test.deepEqual(
           JSON.parse(file.contents), 
           JSON.parse('[{"name": "John", "email": "john@precog.com"},{"name": "Brian", "email": "brian@precog.com"}]'),
@@ -292,16 +292,16 @@ var testApi = asyncModule({
   },
   'list descendants': function(test) {
     return api$.then(function(api) {
-      return api.listDescendants(uploadPathRoot).then(function(descendents) {
-        test.equal(descendents.length, 20, 'Descendants must have size');
+      return api.listDescendants(uploadPathRoot).then(function(descendants) {
+        test.equal(descendants.length, 20, 'Descendants must have size');
       });
     });
   },
   'delete directory': function(test) {
     return api$.then(function(api) {
       return api.deleteAll(uploadPathRoot + '/0').then(function() {
-        return api.listDescendants(uploadPathRoot).then(function(descendents) {
-          test.equal(descendents.length, 18, 'Descendants must have smaller size');
+        return api.listDescendants(uploadPathRoot).then(function(descendants) {
+          test.equal(descendants.length, 18, 'Descendants must have smaller size');
         });
       });
     });
@@ -319,7 +319,7 @@ var testApi = asyncModule({
   },
   'retrieve uploaded script': function(test) {
     return api$.then(function(api) {
-      return api.retrieveFile(uploadPathRoot + '/script.qrl').then(function(file) {
+      return api.getFile(uploadPathRoot + '/script.qrl').then(function(file) {
         test.equal(file.contents, '1 + 1', 'Downloaded script must equal uploaded script');
         test.equal(file.type, 'text/x-quirrel-script', 'Downloaded script must have uploaded mime type');
       });

@@ -84,10 +84,8 @@ function Precog(config) {
     return path.replace(/\/+/g, '/');
   };
   Util.merge = function(o1, o2) {
-    var r, key, index;
-    if (o1 === undefined) return o2;
-    else if (o2 === undefined) return o1;
-    else if (o1 instanceof Array && o2 instanceof Array) {
+    var key, index;
+    if (o1 instanceof Array && o2 instanceof Array) {
       r = [];
       // Copy
       for (index = 0; index < o1.length; index++) {
@@ -641,25 +639,6 @@ function Precog(config) {
   // *** METADATA ***
   // ****************
 
-  /**
-   * Retrieves metadata for the specified path.
-   *
-   * @example
-   * Precog.getMetadata('/foo');
-   */
-  Precog.prototype.getMetadata = Util.addCallbacks(function(path) {
-    var self = this;
-
-    Util.requireParam(path, 'path');
-
-    self.requireConfig('apiKey');
-
-    return PrecogHttp.get({
-      url:      self.metadataUrl("fs/" + path),
-      query:    {apiKey: self.config.apiKey},
-      success:  Util.extractContent
-    });
-  });
 
   /**
    * Legacy method (retrieves raw API results).
@@ -736,6 +715,88 @@ function Precog(config) {
   };
 
   /**
+   * Retrieves metadata for the specified path.
+   *
+   * @example
+   * Precog.getMetadata('/foo');
+   */
+  Precog.prototype.getMetadata = Util.addCallbacks(function(path) {
+    // FIXME: EMULATION
+    var self = this;
+
+    Util.requireParam(path, 'path');
+
+    self.requireConfig('apiKey');
+
+    return self.listChildren(path).then(function(children) {
+      return self.getNodeType(path).then(function(nodeType) {
+        var metadata = {};
+
+        if (Util.acontains(nodeType, 'directory')) {
+          metadata.defaultFiles = {
+            'text/x-quirrel-script': 'index.qrl',
+            'text/html': 'index.html'
+          };
+
+          metadata.children = children;
+        }
+
+        if (Util.acontains(nodeType, 'file')) {
+          if (self._isEmulateData(path)) {
+            var data = self._getEmulateData(path);
+
+            metadata.type = data.type;
+          } else {
+            metadata.type = 'application/json';
+          }
+        }
+
+        return metadata;
+      });
+    });
+    // END EMULATION
+  });
+
+  /**
+   * Retrieves the type of a node in the file system, whether file or directory.
+   *
+   */
+  Precog.prototype.getNodeType = Util.addCallbacks(function(path0) {
+    // FIXME: EMULATION
+    var self = this;
+
+    Util.requireParam(path0, 'path');
+
+    self.requireConfig('apiKey');
+
+    var path = Util.sanitizePath(path0);
+
+    var countPath = function(path) {
+      return self.execute({query: 'count(load("' + path + '"))'}).then(function(results) {
+        return results.data && results.data[0] || 0;
+      });
+    };
+
+    var listRawChildren = function(path) {
+      return self._retrieveMetadata(path).then(function(metadata) {
+        return metadata.children;
+      });
+    };
+
+    return listRawChildren(path).then(function(children) {
+      return countPath(path).then(function(count) {
+        var types = [];
+
+        if (children.length > 0) types.push('directory');
+        if (count > 0 || self._isEmulateData(path)) types.push('file');
+
+        return types;
+      });
+    });
+    // END EMULATION
+  });
+
+  /**
    * Retrieves all children of the specified path.
    *
    * @example
@@ -750,14 +811,35 @@ function Precog(config) {
     // Get extra children not stored in file system:
     var nodeData = self._getEmulateData(path);
 
-    var extraChildren = nodeData.children || [];
+    var extraChildren = Util.amap(nodeData.children || [], function(childName) {
+      return {type: 'file', name: childName};
+    });
+    
+    return this._retrieveMetadata(path).then(function(metadata) {
+      var childNames = metadata.children || [];
 
-    function addExtraChildren(metadata) {
-      return metadata.children.concat(extraChildren);
-    }
-     // END EMULATION
+      return Vow.all(Util.amap(childNames, function(childName) {
+        return self.getNodeType(path + '/' + childName);
+      })).then(function(childTypes) {
+        var flattened = [];
 
-    return this._retrieveMetadata(path).then(addExtraChildren);
+        for (var i = 0; i < childNames.length; i++) {
+          var name = childNames[i];
+
+          for (var j = 0; j < childTypes.length; j++) {
+            var type = childTypes[j];
+
+            flattened.push({
+              type: type,
+              name: name
+            });
+          }
+        }
+
+        return flattened.concat(extraChildren);
+      });
+    });
+    // END EMULATION
   });
 
   /**
@@ -771,24 +853,31 @@ function Precog(config) {
 
     Util.requireParam(path, 'path');
 
-    function listDescendants0(root, prefix) {
+    function listDescendants0(root) {
       return self.listChildren(root).then(function(children) {
-        var futures = Util.amap(children, function(child) {
-          var fullPath = root + '/' + child;
+        var absolutePaths0 = Util.amap(children, function(child) {
+          if (child.name === '/' || child.name === '') Util.error('Infinite recursion');
 
-          return listDescendants0(fullPath, prefix + child);
+          return Util.sanitizePath(root + '/' + child.name);
         });
 
-        return Vow.all(futures).then(function(arrays) {
-          var prefixed = Util.amap(children, function(child) {
-            return prefix + child;
-          });
-          return [].concat.apply(prefixed, arrays);
+        var absolutePaths = [];
+
+        Util.amap(absolutePaths0, function(path) {
+          if (!Util.acontains(absolutePaths, path)) {
+            absolutePaths.push(path);
+          }
+        });
+
+        var futures = Util.amap(absolutePaths, listDescendants0);
+
+        return Vow.all(futures).then(function(arrays) {          
+          return [].concat.apply(absolutePaths, arrays);
         });
       });
     }
 
-    return listDescendants0(path, '');
+    return listDescendants0(path);
   });
 
   /**
@@ -807,8 +896,10 @@ function Precog(config) {
 
     if (targetName === '') Util.error('To determine if a file exists, the file name must be specified');
 
-    return self.listChildren(targetDir).then(function(children) {
-      return Util.acontains(children, targetName);
+    return self.listChildren(targetDir).then(function(children0) {
+      var names = Util.amap(children0, function(child) { return child.name; });
+
+      return Util.acontains(names, targetName);
     });
   });
 
@@ -953,9 +1044,9 @@ function Precog(config) {
    * Retrieves the contents of the specified file.
    *
    * @example
-   * Precog.retrieveFile('/foo/bar.qrl');
+   * Precog.getFile('/foo/bar.qrl');
    */
-  Precog.prototype.retrieveFile = Util.addCallbacks(function(path) {
+  Precog.prototype.getFile = Util.addCallbacks(function(path) {
     var self = this;
 
     Util.requireParam(path, 'path');
@@ -1063,12 +1154,12 @@ function Precog(config) {
 
     self.requireConfig('apiKey');
 
-    var path = Util.sanitizePath(path0 + '/');
+    var path = Util.sanitizePath(path0);
 
-    return self.listDescendants(path).then(function(children0) {
+    return self.listDescendants(path).then(function(descendants) {
       // Convert relative paths to absolute paths:
-      var absolutePaths = (Util.amap(children0, function(child) {
-        return path + child;
+      var absolutePaths = (Util.amap(descendants, function(child) {
+        return Util.sanitizePath(path + '/' + child);
       })).concat([path]);
 
       return Vow.all(Util.amap(absolutePaths, function(child) {
@@ -1089,7 +1180,7 @@ function Precog(config) {
     Util.requireField(info, 'source');
     Util.requireField(info, 'dest');
 
-    return self.retrieveFile(info.source).then(function(file) {
+    return self.getFile(info.source).then(function(file) {
       return self.uploadFile({
         path:     info.dest,
         type:     file.type,
@@ -1134,9 +1225,12 @@ function Precog(config) {
 
       // Copy each file
       for(var i = 0; i < descendants.length; i++) {
+        var absSource = info.source + '/' + descendants[i];
+        var absDest   = info.dest   + '/' + descendants[i];
+
         resolvers.push(self.copyFile({
-          source: info.source + '/' + descendants[i],
-          dest:   info.dest + '/' + descendants[i]
+          source: absSource,
+          dest:   absDest
         }));
       }
 
@@ -1186,7 +1280,7 @@ function Precog(config) {
     // FIXME: EMULATION
 
     // Pull back the contents of the file:
-    return self.retrieveFile(info.path).then(function(file) {
+    return self.getFile(info.path).then(function(file) {
       // See if the file is executable:
       if (file.type === 'text/x-quirrel-script') {
         var executeRequest = {
