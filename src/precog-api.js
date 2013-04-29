@@ -706,7 +706,7 @@ function Precog(config) {
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      localStorage.setItem('Precog.' + path, data);
+      localStorage.setItem('Precog.' + path, JSON.stringify(data));
     } else {
       if (console && console.error) console.error('Missing local storage!');
     }
