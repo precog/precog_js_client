@@ -36,6 +36,17 @@ module.exports = function(grunt) {
         }
       }
     },
+    compress: {
+      main: {
+        options: {
+          mode: 'gzip'
+        },
+        expand: true,
+        cwd: 'dist/',
+        src: '<%= pkg.name %>.js',
+        dest: 'dist/'
+      }
+    },
     watch: {
       files: ['<%= jshint.files %>'],
       tasks: ['jshint', 'rig', 'nodeunit']
@@ -47,8 +58,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-rigger');
+  grunt.loadNpmTasks('grunt-contrib-compress');
 
   grunt.registerTask('test', ['jshint', 'rig', 'nodeunit']);
 
-  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'nodeunit']);
+  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'compress', 'nodeunit']);
 };
