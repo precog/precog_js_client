@@ -47,6 +47,14 @@ module.exports = function(grunt) {
         dest: 'dist/'
       }
     },
+    jsdoc : {
+        dist : {
+            src: ['dist/<%= pkg.name %>.js'], 
+            options: {
+                destination: 'doc'
+            }
+        }
+    },
     watch: {
       files: ['<%= jshint.files %>'],
       tasks: ['jshint', 'rig', 'nodeunit']
@@ -59,8 +67,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-rigger');
   grunt.loadNpmTasks('grunt-contrib-compress');
+  grunt.loadNpmTasks('grunt-jsdoc');
 
   grunt.registerTask('test', ['jshint', 'rig', 'nodeunit']);
 
-  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'compress', 'nodeunit']);
+  grunt.registerTask('default', ['jshint', 'rig', 'uglify', 'compress', 'jsdoc', 'nodeunit']);
 };

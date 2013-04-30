@@ -1,3 +1,4 @@
+/** @module api */
 (function(definition) {
   if (typeof bootstrap === "function") {
     // Montage Require
@@ -2144,9 +2145,6 @@
     // ****************
   
   
-    /**
-     * Legacy method (retrieves raw API results).
-     */   
     Precog.prototype._retrieveMetadata = Util.addCallbacks(function(path) {
       var self = this;
   
@@ -2260,6 +2258,8 @@
     /**
      * Retrieves the type of a node in the file system, whether file or directory.
      *
+     * @example
+     * Precog.getNodeType('/foo/bar');
      */
     Precog.prototype.getNodeType = Util.addCallbacks(function(path0) {
       // FIXME: EMULATION
@@ -2583,7 +2583,7 @@
     });
   
     /**
-     * Appends a JSON value to the specified file.
+     * Appends a single JSON value to the specified data file.
      *
      * @example
      * Precog.append({path: '/website/clicks.json', value: clickEvent});
@@ -2700,8 +2700,7 @@
     });
   
     /**
-     * Copies then deletes a file from specified source to specified
-     * destination.
+     * Moves a file from one location to another.
      *
      * @example
      * Precog.moveFile({source: '/foo/helloo.qrl', dest: '/foo/hello.qrl'})
@@ -2718,8 +2717,7 @@
     });
   
     /**
-     * Copies then deletes a whole directory from specified source to
-     * specified destination.
+     * Moves a directory and its contents from one location to another.
      *
      * @example
      * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
@@ -2755,7 +2753,8 @@
     // ****************
   
     /**
-     * Executes the specified file, which must be a Quirrel script.
+     * Executes the specified file, which must be a Quirrel script. The
+     * maxAge and maxStale settings can be used to accept older analyses.
      *
      * @example
      * Precog.executeFile({path: '/foo/script.qrl'});
@@ -2830,7 +2829,7 @@
      * Optionally, a 'path' field may be specified which uses that path as
      * the base path.
      *
-     * @return {"data": ..., "errors": ..., "warnings": ...}
+     * Returns {"data": ..., "errors": ..., "warnings": ...}
      *
      * @example
      * Precog.execute({query: 'count(//foo)'});

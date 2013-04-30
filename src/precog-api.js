@@ -1326,7 +1326,7 @@ function Precog(config) {
    * Optionally, a 'path' field may be specified which uses that path as
    * the base path.
    *
-   * @return {"data": ..., "errors": ..., "warnings": ...}
+   * Returns {"data": ..., "errors": ..., "warnings": ...}
    *
    * @example
    * Precog.execute({query: 'count(//foo)'});
