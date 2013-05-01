@@ -1,7 +1,8 @@
 /**
  * An HTTP implementation that detects which implementation to use.
  *
- * @constructor
+ * @constructor http
+ * @memberof precog
  *
  * @example
  * PrecogHttp({
@@ -158,6 +159,8 @@ function PrecogHttp(options) {
   };
 
   /**
+   * @method ajax
+   * @memberof precog.http
    * @example
    * PrecogHttp.ajax({
    *   basicAuth: {username: "foo", password: "bar"},
@@ -226,6 +229,8 @@ function PrecogHttp(options) {
   });
 
   /**
+   * @method jsonp
+   * @memberof precog.http
    * @example
    * PrecogHttp.jsonp({
    *   basicAuth: {username: "foo", password: "bar"},
@@ -302,6 +307,8 @@ function PrecogHttp(options) {
   });
 
   /**
+   * @method nodejs
+   * @memberof precog.http
    * @example
    * PrecogHttp.nodejs({
    *   basicAuth: {username: "foo", password: "bar"},

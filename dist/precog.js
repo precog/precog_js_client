@@ -1,3 +1,7 @@
+/**
+ * The API exported by the Precog JS Client.
+ * @namespace precog
+ */
 (function(definition) {
   if (typeof bootstrap === "function") {
     // Montage Require
@@ -1120,7 +1124,8 @@
   /**
    * An HTTP implementation that detects which implementation to use.
    *
-   * @constructor
+   * @constructor http
+   * @memberof precog
    *
    * @example
    * PrecogHttp({
@@ -1277,6 +1282,8 @@
     };
   
     /**
+     * @method ajax
+     * @memberof precog.http
      * @example
      * PrecogHttp.ajax({
      *   basicAuth: {username: "foo", password: "bar"},
@@ -1345,6 +1352,8 @@
     });
   
     /**
+     * @method jsonp
+     * @memberof precog.http
      * @example
      * PrecogHttp.jsonp({
      *   basicAuth: {username: "foo", password: "bar"},
@@ -1421,6 +1430,8 @@
     });
   
     /**
+     * @method nodejs
+     * @memberof precog.http
      * @example
      * PrecogHttp.nodejs({
      *   basicAuth: {username: "foo", password: "bar"},
@@ -1505,7 +1516,8 @@
   /**
    * Constructs a new Precog client library.
    *
-   * @constructor
+   * @constructor api
+   * @memberof precog
    *
    * @param config.apiKey             The API key of the authorizing account. 
    *                                  This is not needed to access the accounts 
@@ -1694,6 +1706,8 @@
      * this function to succeed, the specified email cannot already be associated
      * with an account.
      *
+     * @method createAccount
+     * @memberof precog.api.prototype
      * @example
      * Precog.createAccount({email: "jdoe@foo.com", password: "abc123"});
      */
@@ -1714,6 +1728,8 @@
      * Requests a password reset for the specified email. This may or may not have
      * any effect depending on security settings.
      *
+     * @method requestPasswordReset
+     * @memberof precog.api.prototype
      * @example
      * Precog.requestPasswordReset('jdoe@foo.com');
      */
@@ -1734,6 +1750,8 @@
     /**
      * Looks up the account associated with the specified email address.
      *
+     * @method lookupAccountId
+     * @memberof precog.api.prototype
      * @example
      * Precog.lookupAccountId('jdoe@foo.com');
      */
@@ -1764,6 +1782,8 @@
     /**
      * Describes the specified account, identified by email and password.
      *
+     * @method describeAccount
+     * @memberof precog.api.prototype
      * @example
      * Precog.describeAccount({email: 'jdoe@foo.com', password: 'abc123'});
      */
@@ -1788,6 +1808,8 @@
     /**
      * Adds a grant to the specified account.
      *
+     * @method addGrantToAccount
+     * @memberof precog.api.prototype
      * @example
      * Precog.addGrantToAccount(
      *   {accountId: '23987123', grantId: '0d43eece-7abb-43bd-8385-e33bac78e145'}
@@ -1810,6 +1832,8 @@
      * Retrieves the plan that the specified account is on. The account is 
      * identified by email and password.
      *
+     * @method currentPlan
+     * @memberof precog.api.prototype
      * @example
      * Precog.currentPlan({email: 'jdoe@foo.com', password: 'abc123'});
      */
@@ -1834,6 +1858,8 @@
     /**
      * Changes the account's plan.
      *
+     * @method changePlan
+     * @memberof precog.api.prototype
      * @example
      * Precog.changePlan({email: 'jdoe@foo.com', password: 'abc123', plan: 'BRONZE'});
      */
@@ -1860,6 +1886,8 @@
     /**
      * Delete's the account's plan, resetting it to the default plan on the system.
      *
+     * @method deletePlan
+     * @memberof precog.api.prototype
      * @example
      * Precog.deletePlan({email: 'jdoe@foo.com', password: 'abc123'});
      */
@@ -1888,6 +1916,8 @@
     /**
      * Lists API keys.
      *
+     * @method listApiKeys
+     * @memberof precog.api.prototype
      * @example
      * Precog.listApiKeys();
      */
@@ -1906,6 +1936,8 @@
     /**
      * Creates a new API key with the specified grants.
      *
+     * @method createApiKey
+     * @memberof precog.api.prototype
      * @example
      * Precog.createApiKey(grants);
      */
@@ -1926,6 +1958,8 @@
     /**
      * Describes an existing API key.
      *
+     * @method describeApiKey
+     * @memberof precog.api.prototype
      * @example
      * Precog.describeApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
      */
@@ -1944,6 +1978,8 @@
     /**
      * Deletes an existing API key.
      *
+     * @method deleteApiKey
+     * @memberof precog.api.prototype
      * @example
      * Precog.deleteApiKey('475ae23d-f5f9-4ffc-b643-e805413d2233');
      */
@@ -1963,6 +1999,8 @@
     /**
      * Retrieves the grants associated with an existing API key.
      *
+     * @method retrieveApiKeyGrants
+     * @memberof precog.api.prototype
      * @example
      * Precog.retrieveApiKeyGrants('475ae23d-f5f9-4ffc-b643-e805413d2233');
      */
@@ -1982,6 +2020,8 @@
     /**
      * Adds a grant to an existing API key.
      *
+     * @method addGrantToApiKey
+     * @memberof precog.api.prototype
      * @example
      * Precog.createApiKey({grant: grant, apiKey: apiKey});
      */
@@ -2004,6 +2044,8 @@
     /**
      * Removes a grant from an existing API key.
      *
+     * @method removeGrantFromApiKey
+     * @memberof precog.api.prototype
      * @example
      * Precog.removeGrantFromApiKey({
      *   apiKey: '475ae23d-f5f9-4ffc-b643-e805413d2233', 
@@ -2028,6 +2070,8 @@
     /**
      * Creates a new grant.
      *
+     * @method createGrant
+     * @memberof precog.api.prototype
      * @example
      * Precog.createGrant({
      *   "name": "",
@@ -2059,6 +2103,8 @@
     /**
      * Describes an existing grant.
      *
+     * @method describeGrant
+     * @memberof precog.api.prototype
      * @example
      * Precog.describeGrant('581c36a6-0e14-487e-8622-3a38b828b931');
      */
@@ -2080,6 +2126,8 @@
      * Deletes an existing grant. In order for this operation to succeed,
      * the grant must have been created by the authorizing API key.
      *
+     * @method deleteGrant
+     * @memberof precog.api.prototype
      * @example
      * Precog.deleteGrant('581c36a6-0e14-487e-8622-3a38b828b931');
      */
@@ -2100,6 +2148,8 @@
     /**
      * Lists the children of an existing grant.
      *
+     * @method listGrantChildren
+     * @memberof precog.api.prototype
      * @example
      * Precog.listGrantChildren('581c36a6-0e14-487e-8622-3a38b828b931');
      */
@@ -2120,6 +2170,8 @@
     /**
      * Lists the children of an existing grant.
      *
+     * @method createGrantChild
+     * @memberof precog.api.prototype
      * @example
      * Precog.createGrantChild({
      *   parentGrantId: '581c36a6-0e14-487e-8622-3a38b828b931', 
@@ -2217,6 +2269,8 @@
     /**
      * Retrieves metadata for the specified path.
      *
+     * @method getMetadata
+     * @memberof precog.api.prototype
      * @example
      * Precog.getMetadata('/foo');
      */
@@ -2260,6 +2314,8 @@
     /**
      * Retrieves the type of a node in the file system, whether file or directory.
      *
+     * @method getNodeType
+     * @memberof precog.api.prototype
      * @example
      * Precog.getNodeType('/foo/bar');
      */
@@ -2301,6 +2357,8 @@
     /**
      * Retrieves all children of the specified path.
      *
+     * @method listChildren
+     * @memberof precog.api.prototype
      * @example
      * Precog.listChildren('/foo');
      */
@@ -2348,6 +2406,8 @@
     /**
      * Retrieves all descendants of the specified path.
      *
+     * @method listDescendants
+     * @memberof precog.api.prototype
      * @example
      * Precog.listDescendants('/foo');
      */
@@ -2396,6 +2456,8 @@
     /**
      * Determines if the specified file exists.
      *
+     * @method existsFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.existsFile('/foo/bar.json');
      */
@@ -2424,6 +2486,8 @@
      * Uploads the specified contents to the specified path, using the specified
      * file type (which must be a mime-type accepted by the server).
      *
+     * @method uploadFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.uploadFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
      */
@@ -2535,6 +2599,8 @@
     /**
      * Creates the specified file. The file must not already exist.
      *
+     * @method createFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.createFile({path: '/foo/bar.csv', type: Precog.FileTypes.CSV, contents: contents});
      */
@@ -2555,6 +2621,8 @@
     /**
      * Retrieves the contents of the specified file.
      *
+     * @method getFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.getFile('/foo/bar.qrl');
      */
@@ -2587,6 +2655,8 @@
     /**
      * Appends a single JSON value to the specified data file.
      *
+     * @method append
+     * @memberof precog.api.prototype
      * @example
      * Precog.append({path: '/website/clicks.json', value: clickEvent});
      */
@@ -2601,6 +2671,8 @@
     /**
      * Appends a collection of JSON values to the specified file.
      *
+     * @method appendAll
+     * @memberof precog.api.prototype
      * @example
      * Precog.append({path: '/website/clicks.json', values: clickEvents});
      */
@@ -2634,6 +2706,8 @@
     /**
      * Deletes a specified file in the Precog file system.
      *
+     * @method delete0
+     * @memberof precog.api.prototype
      * @example
      * Precog.delete0('/website/clicks.json');
      */
@@ -2656,6 +2730,8 @@
     /**
      * Deletes the specified directory and everything it contains.
      *
+     * @method deleteAll
+     * @memberof precog.api.prototype
      * @example
      * Precog.deleteAll('/website/');
      */
@@ -2683,6 +2759,8 @@
     /**
      * Copies a file from specified source to specified destination.
      *
+     * @method copyFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.copyFile({source: '/foo/v1.qrl', dest: '/foo/v2.qrl'})
      */
@@ -2704,6 +2782,8 @@
     /**
      * Moves a file from one location to another.
      *
+     * @method moveFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.moveFile({source: '/foo/helloo.qrl', dest: '/foo/hello.qrl'})
      */
@@ -2721,6 +2801,8 @@
     /**
      * Moves a directory and its contents from one location to another.
      *
+     * @method moveDirectory
+     * @memberof precog.api.prototype
      * @example
      * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
      */
@@ -2758,6 +2840,8 @@
      * Executes the specified file, which must be a Quirrel script. The
      * maxAge and maxStale settings can be used to accept older analyses.
      *
+     * @method executeFile
+     * @memberof precog.api.prototype
      * @example
      * Precog.executeFile({path: '/foo/script.qrl'});
      */
@@ -2833,6 +2917,8 @@
      *
      * Returns {"data": ..., "errors": ..., "warnings": ...}
      *
+     * @method execute
+     * @memberof precog.api.prototype
      * @example
      * Precog.execute({query: 'count(//foo)'});
      */
@@ -2861,6 +2947,8 @@
      * Submits a Quirrel query and gives a job identifier back. Use
      * asyncQueryResults to poll for results.
      *
+     * @method _asyncQuery
+     * @memberof precog.api.prototype
      * @example
      * Precog._asyncQuery({query: '1 + 4'});
      */
@@ -2891,6 +2979,8 @@
     /**
      * Poll the status of the specified query job.
      *
+     * @method _asyncQueryResults
+     * @memberof precog.api.prototype
      * @example
      * Precog._asyncQueryResults('8837ee1674fb478fb2ebb0b521eaa6ce');
      */
@@ -2906,35 +2996,6 @@
       });
     });
   })(Precog);
-
-  /**
-   * The API exported by the Precog JS Client.
-   * @namespace precog
-   */
-
-  /**
-   * Constructs a new Precog client library.
-   *
-   * @constructor api
-   * @memberof precog
-   *
-   * @param config.apiKey             The API key of the authorizing account.
-   *                                  This is not needed to access the accounts
-   *                                  API methods.
-   *
-   * @param config.analyticsService   The URL to the analytics service. This is
-   *                                  a required parameter for all API methods.
-   * @returns {Precog}
-   */
-
-  /**
-   * An HTTP implementation that detects which implementation to use.
-   *
-   * @constructor http
-   * @memberof precog
-   * @param {Object} options
-   * @returns {PrecogHttp}
-   */
 
   return {
     http: PrecogHttp,

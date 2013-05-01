@@ -1,3 +1,7 @@
+/**
+ * The API exported by the Precog JS Client.
+ * @namespace precog
+ */
 (function(definition) {
   if (typeof bootstrap === "function") {
     // Montage Require
@@ -48,35 +52,6 @@
 
   //= precog-http.js
   //= precog-api.js
-
-  /**
-   * The API exported by the Precog JS Client.
-   * @namespace precog
-   */
-
-  /**
-   * Constructs a new Precog client library.
-   *
-   * @constructor api
-   * @memberof precog
-   *
-   * @param config.apiKey             The API key of the authorizing account.
-   *                                  This is not needed to access the accounts
-   *                                  API methods.
-   *
-   * @param config.analyticsService   The URL to the analytics service. This is
-   *                                  a required parameter for all API methods.
-   * @returns {Precog}
-   */
-
-  /**
-   * An HTTP implementation that detects which implementation to use.
-   *
-   * @constructor http
-   * @memberof precog
-   * @param {Object} options
-   * @returns {PrecogHttp}
-   */
 
   return {
     http: PrecogHttp,
