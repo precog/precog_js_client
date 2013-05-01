@@ -1120,7 +1120,7 @@
   /**
    * An HTTP implementation that detects which implementation to use.
    *
-   * @class
+   * @constructor
    *
    * @example
    * PrecogHttp({
@@ -1502,11 +1502,10 @@
       return PrecogHttp.http(Util.merge(options, {method: "PATCH"}));
     };
   })(PrecogHttp);
-  
   /**
    * Constructs a new Precog client library.
    *
-   * @class
+   * @constructor
    *
    * @param config.apiKey             The API key of the authorizing account. 
    *                                  This is not needed to access the accounts 
@@ -1632,8 +1631,6 @@
         return f.call(this, v).then(Util.safeCallback(success), failure);
       };
     };
-  
-    /** @module Precog */
   
     Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
       Util.requireField(this.config, "analyticsService");
@@ -2909,6 +2906,35 @@
       });
     });
   })(Precog);
+
+  /**
+   * The API exported by the Precog JS Client.
+   * @namespace precog
+   */
+
+  /**
+   * Constructs a new Precog client library.
+   *
+   * @constructor api
+   * @memberof precog
+   *
+   * @param config.apiKey             The API key of the authorizing account.
+   *                                  This is not needed to access the accounts
+   *                                  API methods.
+   *
+   * @param config.analyticsService   The URL to the analytics service. This is
+   *                                  a required parameter for all API methods.
+   * @returns {Precog}
+   */
+
+  /**
+   * An HTTP implementation that detects which implementation to use.
+   *
+   * @constructor http
+   * @memberof precog
+   * @param {Object} options
+   * @returns {PrecogHttp}
+   */
 
   return {
     http: PrecogHttp,

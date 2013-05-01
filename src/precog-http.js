@@ -1,7 +1,7 @@
 /**
  * An HTTP implementation that detects which implementation to use.
  *
- * @class
+ * @constructor
  *
  * @example
  * PrecogHttp({
