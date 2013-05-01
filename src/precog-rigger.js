@@ -1,4 +1,3 @@
-/** @module api */
 (function(definition) {
   if (typeof bootstrap === "function") {
     // Montage Require

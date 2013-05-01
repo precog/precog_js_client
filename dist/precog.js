@@ -1,4 +1,3 @@
-/** @module api */
 (function(definition) {
   if (typeof bootstrap === "function") {
     // Montage Require
@@ -1629,6 +1628,8 @@
         return f.call(this, v).then(Util.safeCallback(success), failure);
       };
     };
+  
+    /** @module Precog */
   
     Precog.prototype.serviceUrl = function(serviceName, serviceVersion, path) {
       Util.requireField(this.config, "analyticsService");
