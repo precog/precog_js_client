@@ -1,6 +1,8 @@
 /**
  * An HTTP implementation that detects which implementation to use.
  *
+ * @class
+ *
  * @example
  * PrecogHttp({
  *   basicAuth: {username: "foo", password: "bar"},

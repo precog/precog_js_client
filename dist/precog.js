@@ -1120,6 +1120,8 @@
   /**
    * An HTTP implementation that detects which implementation to use.
    *
+   * @class
+   *
    * @example
    * PrecogHttp({
    *   basicAuth: {username: "foo", password: "bar"},
@@ -1503,6 +1505,8 @@
   
   /**
    * Constructs a new Precog client library.
+   *
+   * @class
    *
    * @param config.apiKey             The API key of the authorizing account. 
    *                                  This is not needed to access the accounts 

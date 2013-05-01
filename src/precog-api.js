@@ -2,6 +2,8 @@
 /**
  * Constructs a new Precog client library.
  *
+ * @class
+ *
  * @param config.apiKey             The API key of the authorizing account. 
  *                                  This is not needed to access the accounts 
  *                                  API methods.
