@@ -751,6 +751,44 @@ function Precog(config) {
     }
   };
 
+  Precog.prototype._getChildren = function(path0) {
+    var children = [];
+    var key;
+    var relative;
+    var filename;
+
+    if (typeof localStorage !== 'undefined') {
+      var path = Util.sanitizePath(path0);
+
+      for(key in localStorage) {
+        if(key.indexOf('Precog.' + path0)) continue;
+        relative = key.substr(('Precog.' + path0).length);
+        filename = relative.substr(0, relative.indexOf('/') == -1 ? relative.length : relative.indexOf('/'));
+        if(!filename || children.indexOf(filename) != -1) continue;
+        children.push(filename);
+      }
+    } else {
+      if (console && console.error) console.error('Missing local storage!');
+    }
+
+    return children;
+  };
+
+  Precog.prototype._getTypedChildren = function(path0) {
+    var children = this._getChildren(path0);
+    var typedChildren = [];
+    var i;
+
+    for(i = 0; i < children.length; i++) {
+      typedChildren.push({
+        name: children[i],
+        type: this._getChildren(path0 + children[i] + '/').length ? 'directory' : 'file'
+      });
+    }
+
+    return typedChildren;
+  };
+
   /**
    * Retrieves metadata for the specified path.
    *
@@ -852,13 +890,7 @@ function Precog(config) {
 
     Util.requireParam(path, 'path');
 
-    // FIXME: EMULATION
-    // Get extra children not stored in file system:
-    var nodeData = self._getEmulateData(path);
-
-    var extraChildren = Util.amap(nodeData.children || [], function(childName) {
-      return {type: 'file', name: childName};
-    });
+    var extraChildren = self._getTypedChildren(path);
     
     return this._retrieveMetadata(path).then(function(metadata) {
       var childNames = metadata.children || [];
@@ -1013,15 +1045,6 @@ function Precog(config) {
     }
 
     if (emulate) {
-      // FIXME: EMULATION
-      var parentNode = self._getEmulateData(targetDir);
-
-      parentNode.children = parentNode.children || [];
-      parentNode.children.push(targetName);
-
-      // Keep track of children inside parent node:
-      self._setEmulateData(targetDir, parentNode);
-
       // Keep track of the contents & type of this file:
       var fileNode = self._getEmulateData(fullPath);
 
