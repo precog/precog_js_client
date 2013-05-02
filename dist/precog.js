@@ -2307,8 +2307,8 @@
         var path = Util.sanitizePath(path0);
   
         for (key in localStorage) {
-          if (key.indexOf(self._localStorageKey(path0))) continue;
-          relative = key.substr((self._localStorageKey(path0)).length);
+          if (key.indexOf(self._localStorageKey(path))) continue;
+          relative = key.substr((self._localStorageKey(path)).length);
           filename = relative.substr(0, relative.indexOf('/') == -1 ? relative.length : relative.indexOf('/'));
           if (!filename || children.indexOf(filename) != -1) continue;
           children.push(filename);
@@ -2324,11 +2324,12 @@
       var children = this._getChildren(path0);
       var typedChildren = [];
       var i;
+      var path = Util.sanitizePath(path0 + '/');
   
       for (i = 0; i < children.length; i++) {
         typedChildren.push({
           name: children[i],
-          type: this._getChildren(path0 + children[i] + '/').length ? 'directory' : 'file'
+          type: this._getChildren(path + children[i] + '/').length ? 'directory' : 'file'
         });
       }
   
