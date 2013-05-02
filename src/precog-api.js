@@ -927,7 +927,7 @@ function Precog(config) {
           });
         }
 
-        return flattened.concat(extraChildren);
+        return flattened;
       });
     });
     // END EMULATION
