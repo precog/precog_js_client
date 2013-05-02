@@ -698,26 +698,53 @@ function Precog(config) {
     });
   });
 
+  Precog.prototype._uniqueHash = function() {
+    var self = this;
+
+    var hashCode = function(str){
+      var hash = 0;
+      if (str.length === 0) return hash;
+      for (var i = 0; i < str.length; i++) {
+        var chr = str.charCodeAt(i);
+        hash = ((hash<<5)-hash) + chr;
+        hash = hash & hash;
+      }
+      return hash;
+    };
+
+    self.requireConfig('apiKey');
+
+    return hashCode('Precog' + self.config.apiKey);
+  };
+
+  Precog.prototype._localStorageKey = function(key) {
+    return this._uniqueHash() + key;
+  };
+
   Precog.prototype._isEmulateData = function(path0) {
+    var self = this;
+
     Util.requireParam(path0, 'path');
 
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      return localStorage.getItem('Precog.' + path) != null;
+      return localStorage.getItem(self._localStorageKey(path)) != null;
     }
 
     return false;
   };
 
   Precog.prototype._getEmulateData = function(path0) {
+    var self = this;
+
     Util.requireParam(path0, 'path');
 
     var data = {};
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      data = JSON.parse(localStorage.getItem('Precog.' + path) || '{}');
+      data = JSON.parse(localStorage.getItem(self._localStorageKey(path)) || '{}');
     } else {
       if (console && console.error) console.error('Missing local storage!');
     }
@@ -726,12 +753,14 @@ function Precog(config) {
   };
 
   Precog.prototype._deleteEmulateData = function(path0) {
+    var self = this;
+
     Util.requireParam(path0, 'path');
 
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      localStorage.removeItem('Precog.' + path);
+      localStorage.removeItem(self._localStorageKey(path));
     } else {
       if (console && console.error) console.error('Missing local storage!');
     }
@@ -745,13 +774,15 @@ function Precog(config) {
     if (typeof localStorage !== 'undefined') {
       var path = Util.sanitizePath(path0);
 
-      localStorage.setItem('Precog.' + path, JSON.stringify(data));
+      localStorage.setItem(self._localStorageKey(path), JSON.stringify(data));
     } else {
       if (console && console.error) console.error('Missing local storage!');
     }
   };
 
   Precog.prototype._getChildren = function(path0) {
+    var self = this;
+
     var children = [];
     var key;
     var relative;
@@ -761,8 +792,8 @@ function Precog(config) {
       var path = Util.sanitizePath(path0);
 
       for (key in localStorage) {
-        if (key.indexOf('Precog.' + path0)) continue;
-        relative = key.substr(('Precog.' + path0).length);
+        if (key.indexOf(self._localStorageKey(path0))) continue;
+        relative = key.substr((self._localStorageKey(path0)).length);
         filename = relative.substr(0, relative.indexOf('/') == -1 ? relative.length : relative.indexOf('/'));
         if (!filename || children.indexOf(filename) != -1) continue;
         children.push(filename);
@@ -1030,6 +1061,8 @@ function Precog(config) {
     Util.requireField(info, 'contents');
 
     self.requireConfig('apiKey');
+
+    if (typeof info.contents !== 'string') Util.error('File contents must be a string');
 
     var targetDir  = Util.parentPath(info.path);
     var targetName = Util.lastPathElement(info.path);
