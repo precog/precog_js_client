@@ -1528,7 +1528,7 @@
    *
    */
   function Precog(config) {
-    if(!(this instanceof Precog)) return new Precog(config);
+    if (!(this instanceof Precog)) return new Precog(config);
     this.config = config;
   }
   
@@ -2275,11 +2275,11 @@
       if (typeof localStorage !== 'undefined') {
         var path = Util.sanitizePath(path0);
   
-        for(key in localStorage) {
-          if(key.indexOf('Precog.' + path0)) continue;
+        for (key in localStorage) {
+          if (key.indexOf('Precog.' + path0)) continue;
           relative = key.substr(('Precog.' + path0).length);
           filename = relative.substr(0, relative.indexOf('/') == -1 ? relative.length : relative.indexOf('/'));
-          if(!filename || children.indexOf(filename) != -1) continue;
+          if (!filename || children.indexOf(filename) != -1) continue;
           children.push(filename);
         }
       } else {
@@ -2294,7 +2294,7 @@
       var typedChildren = [];
       var i;
   
-      for(i = 0; i < children.length; i++) {
+      for (i = 0; i < children.length; i++) {
         typedChildren.push({
           name: children[i],
           type: this._getChildren(path0 + children[i] + '/').length ? 'directory' : 'file'
@@ -2414,9 +2414,13 @@
           return self.getNodeType(path + '/' + childName);
         })).then(function(childTypes) {
           var flattened = [];
+          var slashlessNames = [];
+          var i;
+          var name;
   
-          for (var i = 0; i < childNames.length; i++) {
-            var name  = Util.removeTrailingSlash(childNames[i]);
+          for (i = 0; i < childNames.length; i++) {
+            name = Util.removeTrailingSlash(childNames[i]);
+            slashlessNames.push(name);
             var types = childTypes[i];
   
             for (var j = 0; j < types.length; j++) {
@@ -2427,6 +2431,15 @@
                 name: name
               });
             }
+          }
+  
+          for (i = 0; i < extraChildren.length; i++) {
+            name = Util.removeTrailingSlash(extraChildren[i].name);
+            if (slashlessNames.indexOf(name) != -1) continue;
+            flattened.push({
+              name: name,
+              type: extraChildren[i].type
+            });
           }
   
           return flattened.concat(extraChildren);
@@ -2839,7 +2852,7 @@
         var resolvers = [];
   
         // Copy each file
-        for(var i = 0; i < descendants.length; i++) {
+        for (var i = 0; i < descendants.length; i++) {
           var absSource = info.source + '/' + descendants[i];
           var absDest   = info.dest   + '/' + descendants[i];
   
