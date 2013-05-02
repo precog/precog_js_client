@@ -2948,8 +2948,17 @@
       return self.getFile(info.path).then(function(file) {
         // See if the file is executable:
         if (file.type === 'text/x-quirrel-script') {
+          var path1 = Util.sanitizePath('/' + info.path + '/');
+          var path2 = path1.split('/').join('//');
+  
+          // /./
+          // "./
+  
+          // FIXME: HORRIBLE HACK FOR RELATIVE PATHS!!!! THE HORROR!!!!
+          var query2 = file.contents.split('/./').join(path2).split('"./').join('"' + path1);
+  
           var executeRequest = {
-            query: file.contents
+            query: query2 // file.contents
           };
   
           // Execute the script:
