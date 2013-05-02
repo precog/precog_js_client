@@ -1738,9 +1738,9 @@
   
       Util.requireParam(email, 'email');
   
-      return self.lookupAccountId(email).then(function(accountId) {
+      return self.lookupAccountId(email).then(function(result) {
         return PrecogHttp.post({
-          url:      self.accountsUrl("accounts") + "/" + accountId + "/password/reset",
+          url:      self.accountsUrl("accounts") + "/" + result.accountId + "/password/reset",
           content:  {email: email},
           success:  Util.extractContent
         });
