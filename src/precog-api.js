@@ -1077,7 +1077,7 @@ function Precog(config) {
           return self.uploadFile({
             path:     fullPath,
             type:     'application/json',
-            contents: results.data,
+            contents: JSON.stringify(results.data),
             saveEmulation: true // Don't delete the emulation data
           });
         }).then(function() {
