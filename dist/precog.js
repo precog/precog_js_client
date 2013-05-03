@@ -2735,7 +2735,7 @@
   
       delete info.value;
   
-      return this.appendAll(info, success, failure);
+      return this.appendAll(info);
     });
   
     /**
