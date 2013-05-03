@@ -1234,7 +1234,7 @@ function Precog(config) {
   Precog.prototype.appendAll = Util.addCallbacks(function(info) {
     var self = this;
 
-    Util.requireField(info, 'value');
+    Util.requireField(info, 'values');
     Util.requireField(info, 'path');
 
     self.requireConfig('apiKey');
