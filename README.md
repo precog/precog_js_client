@@ -33,7 +33,7 @@ var precog = require('precog');
 1. Create a new Precog API by specifying your API key.
 
     ```
-    var api = new Precog({"apiKey": "[MY API KEY]"});
+    var api = new Precog.api({"apiKey": "[MY API KEY]", "analyticsService" : "https://beta.precog.com"});
     ```
 2. Upload or stream some JSON data into a subdirectory of your base path. Your base path starts with your Precog account ID.
 
