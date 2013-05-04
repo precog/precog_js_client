@@ -49,7 +49,7 @@ var precog = require('precog');
 ## Documentation
 
 Visit the
-[Precog Developer Center](http://www.precog.com/developers/getting-started/sign-up/)
+[Precog Developer Center](http://www.precog.com/developers/)
 for documentation on the REST API and client libraries.
 
 ## Development
