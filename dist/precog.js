@@ -2768,7 +2768,6 @@
                     apiKey:         self.config.apiKey,
                     ownerAccountId: info.ownerAccountId
                   },
-        headers:  { 'Content-Type': 'application/json' },
         success:  Util.extractContent
       });
     });
