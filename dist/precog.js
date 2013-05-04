@@ -2946,9 +2946,11 @@
   
       // Pull back the contents of the file:
       return self.getFile(info.path).then(function(file) {
+        var scriptDir = Util.parentPath(info.path);
+  
         // See if the file is executable:
         if (file.type === 'text/x-quirrel-script') {
-          var path1 = Util.sanitizePath('/' + info.path + '/');
+          var path1 = Util.sanitizePath('/' + scriptDir + '/');
           var path2 = path1.split('/').join('//');
   
           // /./
