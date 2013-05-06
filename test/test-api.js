@@ -383,6 +383,27 @@ var testApi = asyncModule({
       });
     });
   },
+  'uploadFile setup (no tests)': function(test) {
+    return api$.then(function(api) {
+      var file = uploadPathRoot + 'append-test';
+
+      return api.uploadFile({path: file, contents: JSON.stringify({baz: "bar"}), type: 'application/json'}).then(function() {
+        test.ok(true, 'uploadFile setup succeeds');
+      });
+    });
+  },
+  'uploadFile replaces existing (non-empty) contents': function(test) {
+    return api$.then(function(api) {
+      var file = uploadPathRoot + 'append-test';
+
+      return api.execute({query: 'load("' + file + '")'}).then(function(results) {
+        var data = results.data;
+
+        test.ok(data.length === 1, 'Non-empty results are returned');
+        test.deepEqual(data[0], {"baz": "bar"}, 'File contents must be returned');
+      });
+    });
+  },
   'create grant': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
