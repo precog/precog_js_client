@@ -19,10 +19,10 @@ var originalUploadPath;
 var uploadPath;
 
 var account$ = anonApi.createAccount(user).then(function(account) {
-  uploadPathRoot = '/' + account.accountId;
+  uploadPathRoot = '/' + account.accountId + '/';
 
-  originalUploadPath = uploadPathRoot + '/' + 'original';
-  uploadPath         = uploadPathRoot + '/' + 'test';
+  originalUploadPath = uploadPathRoot + 'original';
+  uploadPath         = uploadPathRoot + 'test';
 
   return anonApi.describeAccount(user);
 });
@@ -282,7 +282,7 @@ var testApi = asyncModule({
       var vows = [];
       for(var i = 0; i < 10; i++) {
         vows.push(api.uploadFile({
-          path: uploadPathRoot + '/' + i + '/' + i,
+          path: uploadPathRoot + i.toString() + '/' + i.toString(),
           contents: '{"a": ' + i + '}',
           type: 'application/json'
         }));
@@ -299,7 +299,7 @@ var testApi = asyncModule({
   },
   'delete directory': function(test) {
     return api$.then(function(api) {
-      return api.deleteAll(uploadPathRoot + '/0').then(function() {
+      return api.deleteAll(uploadPathRoot + '0').then(function() {
         return api.listDescendants(uploadPathRoot).then(function(descendants) {
           test.equal(descendants.length, 18, 'Descendants must have smaller size');
         });
@@ -327,14 +327,14 @@ var testApi = asyncModule({
   },
   'freshly execute uploaded script': function(test) {
     return api$.then(function(api) {
-      return api.executeFile({path: uploadPathRoot + '/script.qrl'}).then(function(results) {
+      return api.executeFile({path: uploadPathRoot + 'script.qrl'}).then(function(results) {
         test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
       });
     });
   },
   'retrieved cached execution of script': function(test) {
     return api$.then(function(api) {
-      return api.executeFile({path: uploadPathRoot + '/script.qrl', maxAge: 999999, maxStale: 999999}).then(function(results) {
+      return api.executeFile({path: uploadPathRoot + 'script.qrl', maxAge: 999999, maxStale: 999999}).then(function(results) {
         test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
       });
     });
@@ -348,7 +348,7 @@ var testApi = asyncModule({
       test.deepEqual(results.data, [3], '1 + 2 should return 3');
     });
   },
-  'query async': function(test) {
+ /* 'query async': function(test) {
     return account$.then(function(account) {
       return api$.then(function(api) {
         return api._asyncQuery({
@@ -366,6 +366,20 @@ var testApi = asyncModule({
         test.equal(results.errors.length, 0, 'Errors must be empty');
         test.equal(results.warnings.length, 0, 'Warnings must be empty');
         test.deepEqual(results.data, [3], 'Data must only contain three');
+      });
+    });
+  }, */
+  'append a value': function(test) {
+    return api$.then(function(api) {
+      var file = uploadPathRoot + 'append-test';
+
+      return api.append({path: file, value: {foo: "bar"}}).then(function() {
+        return api.execute({query: 'load("' + file + '")'}).then(function(results) {
+          var data = results.data;
+
+          test.ok(data.length > 0, 'Non-empty results are returned');
+          test.deepEqual(data[0], {"foo": "bar"}, 'Appended data must be returned');
+        });
       });
     });
   },
