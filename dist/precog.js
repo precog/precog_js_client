@@ -2642,8 +2642,6 @@
   
         // END EMULATION
       } else {
-        resolver = Vow.promise();
-  
         var doUpload = function() {
           return PrecogHttp.post({
             url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
@@ -2655,14 +2653,17 @@
               quote:          info.quote,
               escape:         info.escape
             },
-            headers:  { 'Content-Type': info.type }
-          }).then(function(v) { resolver.fulfill(v.content); });
+            headers:  { 'Content-Type': info.type },
+            success: Util.extractContent
+          });
         };
-        
-        if (info.saveEmulation) doUpload();
-        else self.delete0(fullPath).then(doUpload).done();
   
-        return resolver;
+        // First delete data, then upload!
+        return PrecogHttp.delete0({
+          url:      self.dataUrl("async/fs/" + fullPath),
+          query:    {apiKey: self.config.apiKey},
+          success:  Util.extractContent
+        }).then(doUpload, doUpload);
       }
     });
   
@@ -2966,7 +2967,7 @@
           return self.execute(executeRequest).then(function(results) {
             if (typeof localStorage !== 'undefined') {
               // If there are no errors, store the cached execution of the script:
-              if (!results.errors || !results.errors.length) {
+              if (results && (results.errors == null || results.errors.length === 0)) {
                 var fileNode = self._getEmulateData(info.path);
   
                 fileNode.cached = {
