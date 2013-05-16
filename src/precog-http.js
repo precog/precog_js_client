@@ -81,18 +81,6 @@ function PrecogHttp(options) {
   };
 
   Util.defopts = function(f) {
-    var log = function(type, options) {
-      return function(v) {
-        if (typeof console !== 'undefined') {
-          var logger = console[type] || console.info;
-
-          logger.call(console, options.method + ' ' + options.url);
-          logger.call(console, v);
-        }
-        if (type !== 'error') return v;
-      };
-    };
-
     return function(options) {
       var o = {};
 
@@ -100,9 +88,9 @@ function PrecogHttp(options) {
       o.url      = Util.addQuery(options.url, options.query);
       o.content  = options.content;
       o.headers  = options.headers || {};
-      o.success  = options.success || log('debug', o);
-      o.failure  = options.failure || log('error', o);
-      o.progress = options.progress || log('debug', o);
+      o.success  = options.success;
+      o.failure  = options.failure;
+      o.progress = options.progress;
       o.sync     = options.sync || false;
 
       if (options.basicAuth) {
@@ -181,7 +169,7 @@ function PrecogHttp(options) {
     request.open(options.method, options.url, options.sync);
 
     request.upload && (request.upload.onprogress = function(e) {
-      if (e.lengthComputable) {
+      if (e.lengthComputable && options.progress) {
         options.progress({loaded : e.loaded, total : e.total });
       }
     });
@@ -339,7 +327,7 @@ function PrecogHttp(options) {
       response.on('data', function (chunk) {
         data += chunk;
 
-        if (response.headers['content-length'])
+        if (response.headers['content-length'] && options.progress)
           options.progress({loaded : data.length, total : response.headers['content-length'] });
       });
       response.on('end', function() {
