@@ -166,7 +166,7 @@ function PrecogHttp(options) {
 
     var request = PrecogHttp.createAjax();
 
-    request.open(options.method, options.url, options.sync);
+    request.open(options.method, options.url, !options.sync);
 
     request.upload && (request.upload.onprogress = function(e) {
       if (e.lengthComputable && options.progress) {
