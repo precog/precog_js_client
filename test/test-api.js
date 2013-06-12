@@ -3,7 +3,8 @@ Precog = typeof Precog == 'undefined' ? require('..') : Precog;
 
 var state = {};
 
-var analyticsService = 'https://devapi.precog.com';
+//var analyticsService = 'https://devapi.precog.com';
+var analyticsService = 'https://devspace01.precog.com';
 
 var user = {
   email: 'jstest' + new Date().valueOf() + '@precog.com',
@@ -235,7 +236,7 @@ var testApi = asyncModule({
     return api$.then(function(api) {
       return api.getFile(originalUploadPath).then(function(file) {
         test.deepEqual(
-          JSON.parse(file.contents), 
+          JSON.parse(file.contents),
           JSON.parse('[{"name": "John", "email": "john@precog.com"},{"name": "Brian", "email": "brian@precog.com"}]'),
           'Retrieved contents of a file must be equal to the original uploaded file'
         );
@@ -321,21 +322,20 @@ var testApi = asyncModule({
     return api$.then(function(api) {
       return api.getFile(uploadPathRoot + '/script.qrl').then(function(file) {
         test.equal(file.contents, '1 + 1', 'Downloaded script must equal uploaded script');
-        test.equal(file.type, 'text/x-quirrel-script', 'Downloaded script must have uploaded mime type');
       });
     });
   },
   'freshly execute uploaded script': function(test) {
     return api$.then(function(api) {
       return api.executeFile({path: uploadPathRoot + 'script.qrl'}).then(function(results) {
-        test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
+        test.deepEqual(results, [2], 'Execution of uploaded script must have correct results');
       });
     });
   },
   'retrieved cached execution of script': function(test) {
     return api$.then(function(api) {
       return api.executeFile({path: uploadPathRoot + 'script.qrl', maxAge: 999999, maxStale: 999999}).then(function(results) {
-        test.deepEqual(results.data, [2], 'Execution of uploaded script must have correct results');
+        test.deepEqual(results, [2], 'Execution of uploaded script must have correct results');
       });
     });
   },

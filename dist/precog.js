@@ -1651,7 +1651,15 @@
       return this.serviceUrl("ingest", 1, path);
     };
   
+    Precog.prototype.fileUrl = function(path) {
+      return this.serviceUrl("data", 1, path);
+    };
+  
     Precog.prototype.analysisUrl = function(path) {
+      return this.serviceUrl("analysis", 1, path);
+    };
+  
+    Precog.prototype.analyticsUrl = function(path) {
       return this.serviceUrl("analytics", 1, path);
     };
   
@@ -2201,129 +2209,6 @@
       });
     });
   
-    Precog.prototype._uniqueHash = function() {
-      var self = this;
-  
-      var hashCode = function(str){
-        var hash = 0;
-        if (str.length === 0) return hash;
-        for (var i = 0; i < str.length; i++) {
-          var chr = str.charCodeAt(i);
-          hash = ((hash<<5)-hash) + chr;
-          hash = hash & hash;
-        }
-        return hash;
-      };
-  
-      self.requireConfig('apiKey');
-  
-      return hashCode('Precog' + self.config.apiKey);
-    };
-  
-    Precog.prototype._localStorageKey = function(key) {
-      return this._uniqueHash() + key;
-    };
-  
-    Precog.prototype._isEmulateData = function(path0) {
-      var self = this;
-  
-      Util.requireParam(path0, 'path');
-  
-      if (typeof localStorage !== 'undefined') {
-        var path = Util.sanitizePath(path0);
-  
-        return localStorage.getItem(self._localStorageKey(path)) != null;
-      }
-  
-      return false;
-    };
-  
-    Precog.prototype._getEmulateData = function(path0) {
-      var self = this;
-  
-      Util.requireParam(path0, 'path');
-  
-      var data = {};
-      if (typeof localStorage !== 'undefined') {
-        var path = Util.sanitizePath(path0);
-  
-        data = JSON.parse(localStorage.getItem(self._localStorageKey(path)) || '{}');
-      } else {
-        if (console && console.error) console.error('Missing local storage!');
-      }
-  
-      return data;
-    };
-  
-    Precog.prototype._deleteEmulateData = function(path0) {
-      var self = this;
-  
-      Util.requireParam(path0, 'path');
-  
-      if (typeof localStorage !== 'undefined') {
-        var path = Util.sanitizePath(path0);
-  
-        localStorage.removeItem(self._localStorageKey(path));
-      } else {
-        if (console && console.error) console.error('Missing local storage!');
-      }
-    };
-  
-    Precog.prototype._setEmulateData = function(path0, data) {
-      var self = this;
-  
-      Util.requireParam(path0, 'path');
-  
-      if (typeof localStorage !== 'undefined') {
-        var path = Util.sanitizePath(path0);
-  
-        localStorage.setItem(self._localStorageKey(path), JSON.stringify(data));
-      } else {
-        if (console && console.error) console.error('Missing local storage!');
-      }
-    };
-  
-    Precog.prototype._getChildren = function(path0) {
-      var self = this;
-  
-      var children = [];
-      var key;
-      var relative;
-      var filename;
-  
-      if (typeof localStorage !== 'undefined') {
-        var path = Util.sanitizePath(path0);
-  
-        for (key in localStorage) {
-          if (key.indexOf(self._localStorageKey(path))) continue;
-          relative = key.substr((self._localStorageKey(path)).length);
-          filename = relative.substr(0, relative.indexOf('/') == -1 ? relative.length : relative.indexOf('/'));
-          if (!filename || children.indexOf(filename) != -1) continue;
-          children.push(filename);
-        }
-      } else {
-        if (console && console.error) console.error('Missing local storage!');
-      }
-  
-      return children;
-    };
-  
-    Precog.prototype._getTypedChildren = function(path0) {
-      var children = this._getChildren(path0);
-      var typedChildren = [];
-      var i;
-      var path = Util.sanitizePath(path0 + '/');
-  
-      for (i = 0; i < children.length; i++) {
-        typedChildren.push({
-          name: children[i],
-          type: this._getChildren(path + children[i] + '/').length ? 'directory' : 'file'
-        });
-      }
-  
-      return typedChildren;
-    };
-  
     /**
      * Retrieves metadata for the specified path.
      *
@@ -2354,13 +2239,7 @@
           }
   
           if (Util.acontains(nodeType, 'file')) {
-            if (self._isEmulateData(path)) {
-              var data = self._getEmulateData(path);
-  
-              metadata.type = data.type;
-            } else {
-              metadata.type = 'application/json';
-            }
+            metadata.type = 'application/json';
           }
   
           return metadata;
@@ -2404,7 +2283,7 @@
           var types = [];
   
           if (children.length > 0) types.push('directory');
-          if (count > 0 || self._isEmulateData(path)) types.push('file');
+          if (count > 0) types.push('file');
   
           return types;
         });
@@ -2425,8 +2304,6 @@
   
       Util.requireParam(path, 'path');
   
-      var extraChildren = self._getTypedChildren(path);
-      
       return this._retrieveMetadata(path).then(function(metadata) {
         var childNames = metadata.children || [];
   
@@ -2451,15 +2328,6 @@
                 name: name
               });
             }
-          }
-  
-          for (i = 0; i < extraChildren.length; i++) {
-            name = Util.removeTrailingSlash(extraChildren[i].name);
-            if (slashlessNames.indexOf(name) != -1) continue;
-            flattened.push({
-              name: name,
-              type: extraChildren[i].type
-            });
           }
   
           return flattened;
@@ -2575,84 +2443,17 @@
   
       var fullPath = targetDir + '/' + targetName;
   
-      // FIXME: EMULATION
-      var emulate;
-  
-      switch (info.type) {
-        case Precog.FileTypes.JSON:
-        case Precog.FileTypes.JSON_STREAM:
-        case Precog.FileTypes.CSV:
-        case Precog.FileTypes.ZIP:
-        case Precog.FileTypes.GZIP:
-  
-          emulate = false;
-        break;
-  
-        default: 
-          emulate = true;
-  
-        break;
-      }
-  
-      if (emulate) {
-        // Keep track of the contents & type of this file:
-        var fileNode = self._getEmulateData(fullPath);
-  
-        fileNode.type     = info.type;
-        fileNode.contents = info.contents;
-        fileNode.version  = fileNode.version ? fileNode.version + 1 : 1;
-        fileNode.lastModified = new Date().getTime();
-  
-        self._setEmulateData(fullPath, fileNode);
-  
-        if (info.type === 'text/x-quirrel-script') {
-          // The file is a script, immediately execute it:
-          return self.executeFile({
-            path: fullPath
-          }).then(function(results) {
-            // Take the data, and upload it to the file system.
-            return self.uploadFile({
-              path:     fullPath,
-              type:     'application/json',
-              contents: JSON.stringify(results.data),
-              saveEmulation: true // Don't delete the emulation data
-            });
-          }).then(function() {
-            return {versions: {head: fileNode.version}};
-          });
-        } else {
-          // The file is not a script, so we can't execute it, so just
-          // report success:
-          resolver = Vow.promise();
-          resolver.fulfill({versions:{head: fileNode.version}});
-          return resolver;
-        }
-  
-        // END EMULATION
-      } else {
-        var doUpload = function() {
-          return PrecogHttp.post({
-            url:      self.dataUrl((info.async ? "async" : "sync") + "/fs/" + fullPath),
-            content:  info.contents,
-            query:    {
-              apiKey:         self.config.apiKey,
-              ownerAccountId: info.ownerAccountId,
-              delimiter:      info.delimiter,
-              quote:          info.quote,
-              escape:         info.escape
-            },
-            headers:  { 'Content-Type': info.type },
-            success: Util.extractContent
-          });
-        };
-  
-        // First delete data, then upload!
-        return PrecogHttp.delete0({
-          url:      self.dataUrl("async/fs/" + fullPath),
-          query:    {apiKey: self.config.apiKey},
-          success:  Util.extractContent
-        }).then(doUpload, doUpload);
-      }
+      return PrecogHttp.put({
+        url:     self.dataUrl('data/fs/' + fullPath),
+        content: info.contents,
+        query:   {
+          apiKey         : self.config.apiKey
+        },
+        headers: {
+          'Content-Type' : info.type
+        },
+        success: Util.extractContent
+      });
     });
   
     /**
@@ -2690,25 +2491,39 @@
   
       Util.requireParam(path, 'path');
   
-      // FIXME: EMULATION
-      if (self._isEmulateData(path)) {
-        var fileNode = self._getEmulateData(path);
-        var resolver = Vow.promise();
-        resolver.fulfill({
-          contents: fileNode.contents, 
-          type:     fileNode.type
-        });
+      // HACK: We have to manually remove identities from response
+      function transformBadJSON(content) {
+        var newContent = [],
+            i;
   
-        return resolver;
-      } else {
-        return self.execute({query: 'load("' + path + '")'}).then(function(results) {
-          return {
-            contents: JSON.stringify(results.data),
-            type:    'application/json'
-          };
-        });
+        for(i = 0; i < content.length; i++) {
+          newContent.push(content[i].value);
+        }
+  
+        return newContent;
       }
-      // END EMULATION
+  
+      return PrecogHttp.get({
+        url:      self.fileUrl("fs/" + path),
+        headers:  { Accept: 'application/json, */*' },
+        query:    {
+                    apiKey: self.config.apiKey
+                  },
+        success:  function(response) {
+          var contentType = response.headers['content-type'] || response.headers['Content-Type'];
+  
+          if(contentType == 'application/json') {
+            return {
+              type: contentType,
+              contents: JSON.stringify(transformBadJSON(Util.extractContent(response)))
+            };
+          }
+          return {
+            type: contentType,
+            contents: Util.extractContent(response)
+          };
+        }
+      });
     });
   
     /**
@@ -2775,8 +2590,6 @@
       Util.requireParam(path, 'path');
   
       self.requireConfig('apiKey');
-  
-      self._deleteEmulateData(path);
   
       return PrecogHttp.delete0({
         url:      self.dataUrl("async/fs/" + path),
@@ -2908,74 +2721,24 @@
   
       Util.requireField(info, 'path');
   
-      // FIXME: EMULATION
-      if (self._isEmulateData(info.path) && info.maxAge) {
-        // User wants to cache, see if there's a cached version:
-        var fileNode = self._getEmulateData(info.path);
+      self.requireConfig('apiKey');
   
-        if (fileNode.cached) {
-          var cached = fileNode.cached;
-  
-          // There's a cached version, see if it's fresh enough:
-          var now = (new Date()).getTime() / 1000;
-  
-          var age = now - cached.timestamp;
-  
-          if (age < info.maxAge || info.maxStale && (age < (info.maxAge + info.maxStale))) {
-            var resolver = Vow.promise();
-            resolver.fulfill(cached.results);
-            return resolver;
-          }
-        }
-      }
-      // END EMULATION
-  
-      // FIXME: EMULATION
-  
-      // Pull back the contents of the file:
-      return self.getFile(info.path).then(function(file) {
-        var scriptDir = Util.parentPath(info.path);
-  
-        // See if the file is executable:
-        if (file.type === 'text/x-quirrel-script') {
-          var path1 = Util.sanitizePath('/' + scriptDir + '/');
-          var path2 = path1.split('/').join('//');
-  
-          // /./
-          // "./
-  
-          // FIXME: HORRIBLE HACK FOR RELATIVE PATHS!!!! THE HORROR!!!!
-          var query2 = file.contents.split('/./').join(path2).split('"./').join('"' + path1);
-  
-          var executeRequest = {
-            query: query2 // file.contents
-          };
-  
-          // Execute the script:
-          return self.execute(executeRequest).then(function(results) {
-            if (typeof localStorage !== 'undefined') {
-              // If there are no errors, store the cached execution of the script:
-              if (results && (results.errors == null || results.errors.length === 0)) {
-                var fileNode = self._getEmulateData(info.path);
-  
-                fileNode.cached = {
-                  results:   results,
-                  timestamp: (new Date()).getTime() / 1000
-                };
-  
-                self._setEmulateData(info.path, fileNode);
-              }
-            }
-  
-            return results;
-          });
-        } else {
-          Util.error('The file ' + info.path +
-                     ' does not have type text/x-quirrel-script and therefore cannot be executed');
+      return PrecogHttp.get({
+        url:      self.analysisUrl("fs/" + info.path),
+        query:    {
+          apiKey: self.config.apiKey,
+          limit:  info.limit,
+          skip:   info.skip,
+          sortOn: info.sortOn,
+          format: 'detailed'
+        },
+        success:  function(response) {
+          // TODO: Cached query API doesn't return Content-Type. Change
+          // this whole function into just Util.extractContent when it
+          // does.
+          return JSON.parse(Util.extractContent(response));
         }
       });
-  
-      // END EMULATION
     });
   
     /**
@@ -2999,7 +2762,7 @@
       self.requireConfig('apiKey');
   
       return PrecogHttp.get({
-        url:      self.analysisUrl("fs/" + (info.path || '')),
+        url:      self.analyticsUrl("fs/" + (info.path || '')),
         query:    {
                     apiKey: self.config.apiKey, 
                     q:      info.query,
@@ -3027,7 +2790,7 @@
       Util.requireField(info, 'query');
   
       return PrecogHttp.post({
-        url:      self.analysisUrl("queries"),
+        url:      self.analyticsUrl("queries"),
         query:    {
                     apiKey     : self.config.apiKey,
                     q          : info.query,
@@ -3059,7 +2822,7 @@
       Util.requireParam(jobId, 'jobId');
   
       return PrecogHttp.get({
-        url:      self.analysisUrl("queries/") + jobId,
+        url:      self.analyticsUrl("queries/") + jobId,
         query:    {apiKey: self.config.apiKey},
         success:  Util.extractContent
       });
