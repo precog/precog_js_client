@@ -763,24 +763,23 @@ function Precog(config) {
 
     var path = Util.sanitizePath(path0);
 
-    var countPath = function(path) {
-      return self.execute({query: 'count(load("' + path + '"))'}).then(function(results) {
-        return results.data && results.data[0] || 0;
-      });
-    };
+    var countPath = self.execute({query: 'count(load("' + path + '"))'}).then(function(results) {
+      return results.data && results.data[0] || 0;
+    });
 
-    var listRawChildren = function(path) {
-      return self._retrieveMetadata(path).then(function(metadata) {
-        return metadata.children;
-      });
-    };
+    var listRawChildren = self._retrieveMetadata(path).then(function(metadata) {
+      return metadata.children;
+    });
 
-    return listRawChildren(path).then(function(children) {
-      return countPath(path).then(function(count) {
+    return listRawChildren.then(function(children) {
+      return countPath.then(function(count) {
         var types = [];
 
         if (children.length > 0) types.push('directory');
         if (count > 0) types.push('file');
+
+        // Default to directory
+        if (!types.length) types.push('directory');
 
         return types;
       });
@@ -988,18 +987,6 @@ function Precog(config) {
 
     Util.requireParam(path, 'path');
 
-    // HACK: We have to manually remove identities from response
-    function transformBadJSON(content) {
-      var newContent = [],
-          i;
-
-      for(i = 0; i < content.length; i++) {
-        newContent.push(content[i].value);
-      }
-
-      return newContent;
-    }
-
     return PrecogHttp.get({
       url:      self.fileUrl("fs/" + path),
       headers:  { Accept: 'application/json, */*' },
@@ -1012,7 +999,7 @@ function Precog(config) {
         if(contentType == 'application/json') {
           return {
             type: contentType,
-            contents: JSON.stringify(transformBadJSON(Util.extractContent(response)))
+            contents: JSON.stringify(Util.extractContent(response))
           };
         }
         return {
@@ -1167,14 +1154,14 @@ function Precog(config) {
   });
 
   /**
-   * Moves a directory and its contents from one location to another.
+   * Copys a directory and its contents from one location to another.
    *
-   * @method moveDirectory
+   * @method copyDirectory
    * @memberof precog.api.prototype
    * @example
-   * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
+   * Precog.copyDirectory({source: '/foo/helloo', dest: '/foo/hello'})
    */
-  Precog.prototype.moveDirectory = Util.addCallbacks(function(info) {
+  Precog.prototype.copyDirectory = Util.addCallbacks(function(info) {
     var self = this;
 
     Util.requireField(info, 'source');
@@ -1194,9 +1181,23 @@ function Precog(config) {
         }));
       }
 
-      return Vow.all(resolvers).then(function() {
-        return self.deleteAll(info.source);
-      });
+      return Vow.allResolved(resolvers);
+    });
+  });
+
+  /**
+   * Moves a directory and its contents from one location to another.
+   *
+   * @method moveDirectory
+   * @memberof precog.api.prototype
+   * @example
+   * Precog.moveDirectory({source: '/foo/helloo', dest: '/foo/hello'})
+   */
+  Precog.prototype.moveDirectory = Util.addCallbacks(function(info) {
+    var self = this;
+
+    return self.copyDirectory(info).then(function() {
+      return self.deleteAll(info.source);
     });
   });
 
