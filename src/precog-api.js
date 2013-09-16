@@ -1498,12 +1498,16 @@ function Precog(config) {
     return PrecogHttp.get({
       url:      self.analysisUrl("fs/" + (info.path || '')),
       query:    {
-                  apiKey: self.config.apiKey, 
-                  q:      info.query,
-                  limit:  info.limit,
-                  skip:   info.skip,
-                  sortOn: info.sortOn,
-                  format: 'detailed'
+                  apiKey     : self.config.apiKey,
+                  q          : info.query,
+                  limit      : info.limit,
+                  skip       : info.skip,
+                  order      : info.order,
+                  sortOn     : info.sortOn,
+                  sortOrder  : info.sortOrder,
+                  timeout    : info.timeout,
+                  prefixPath : info.prefixPath,
+                  format     : info.format || 'detailed'
                 },
       success:  Util.extractContent
     });
